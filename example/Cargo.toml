@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-flashlog = { version = "1.0", path = "../" }
+flashlog = { version = "1.0", path = "../flashlog" }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
