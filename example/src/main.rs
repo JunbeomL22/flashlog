@@ -20,8 +20,7 @@ impl Default for LogStruct {
 }
 
 fn main() -> Result<()> {
-    //
-    let _ = Logger::initialize()
+    let logger = Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
         .with_msg_buffer_size(3_000_000)
