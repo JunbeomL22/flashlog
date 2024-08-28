@@ -5,6 +5,6 @@ edition = "2021"
 publish = false
 
 [dependencies]
-flashlog = { version = "1.0", path = "../" }
+flashlog = { version = "1.0", path = "../../" }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
