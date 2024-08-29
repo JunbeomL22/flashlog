@@ -22,7 +22,7 @@ impl Default for LogStruct {
 }
 
 fn slog_i32() {
-   let log_path = "logs/test_i32.log";
+   let log_path = "logs/i32.log";
    let file = OpenOptions::new()
       .create(true)
       .write(true)
@@ -65,7 +65,7 @@ fn slog_i32() {
 }
 
 fn slog_array_80bytes() {
-    let log_path = "logs/test_struct.log";
+    let log_path = "logs/arr.log";
     let file = OpenOptions::new()
         .create(true)
         .write(true)

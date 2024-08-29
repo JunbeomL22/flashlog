@@ -15,7 +15,7 @@ impl Default for LogStruct {
 }
 
 fn fast_log_array_80bytes() {
-    fast_log::init(Config::new().file("logs/test.log").chan_len(Some(100000))).unwrap();
+    fast_log::init(Config::new().file("logs/arr.log").chan_len(Some(100000))).unwrap();
     let iteration = 500_000;
     let test_number = 5;
     let log_struct = LogStruct::default();
@@ -45,7 +45,7 @@ fn fast_log_array_80bytes() {
 }
 
 fn fast_log_i32() {
-    fast_log::init(Config::new().file("logs/test.log").chan_len(Some(100000))).unwrap();
+    fast_log::init(Config::new().file("logs/i32.log").chan_len(Some(100000))).unwrap();
     let iteration = 500_000;
     let test_number = 5;
     let mut res_vec = Vec::new();

@@ -1,5 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use flashlog::lazy_string::LazyString;
 
 use flashlog::{
     LogLevel, Logger, TimeZone,
@@ -106,12 +107,39 @@ fn flashlog_i32() -> Result<()> {
     drop(logger);
     Ok(())
 }
-
+/*
 fn main() -> Result<()> {
     #[cfg(feature = "i32")]
     flashlog_i32();
     
     #[cfg(feature = "arr")]
     flashlog_array_80bytes();
+    Ok(())
+}
+    */
+
+fn main() -> Result<()> {
+    let logger = Logger::initialize()
+            // folder and file name
+            .with_file("logs", "message")?
+            .with_console_report(false)
+            // In the logger thread, the messages are filled in a buffer
+            // It flushes the messages where the length is more than 1,000,000
+            .with_msg_buffer_size(1_000_000)
+            // The messages are flushed if it has been passed 1,000,000 ns from the last flush
+            .with_msg_flush_interval(1_000_000)
+            .with_max_log_level(LogLevel::Info)
+            .with_timezone(TimeZone::Local)
+            .launch();
+
+    let log_struct = LogStruct::default();
+    info!("Warm up");
+    log_info!("Log message", log_struct = log_struct);
+
+    let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3));
+    log_info!("LazyOne", msg = lazy_msg);   
+    // this macro flushes message regardless of the options
+    flush!("flushing", data = "");
+
     Ok(())
 }
