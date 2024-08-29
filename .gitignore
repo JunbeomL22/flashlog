@@ -5,3 +5,4 @@
 /examples/fast_log/target
 /examples/flashlog/target
 /examples/slog/target
+/examples/*/target

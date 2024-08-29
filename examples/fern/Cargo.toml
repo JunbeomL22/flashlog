@@ -1,0 +1,26 @@
+[package]
+name = "example-fern"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+arr = []
+i32 = []
+
+
+[dependencies]
+flashlog = { version = "0.1", path = "../../" }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+femme = "2.2"
+log = { version = "0.4.14", features = [
+    "kv_unstable",
+    "std",
+    "kv_unstable_serde",
+] }
+
+kv-log-macro = "1.0.5"
+fern = "0.6"
+time = "0.3"
+humantime = "2.1"

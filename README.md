@@ -30,6 +30,11 @@ struct LogStruct {
 ```
 Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
 ```
+
+### fern: [test-file](./examples/fern/src/main.rs)
+```
+[2024-08-29T05:59:56.608510100Z INFO example_fern] Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
+```
 ## Performance comparisons
 ### Test machine: i5-14400F, 2.5Ghz
 
@@ -39,4 +44,5 @@ Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8,
 | ftlog     | 323 ns        | 581 ns          |
 | fast_log  | 500 ns        | 500 ns          |
 | slog      | 324 ns        | 604 ns          |
+| fern      | 4732 ns       | 5714 ns         |
 
