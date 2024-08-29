@@ -22,7 +22,7 @@ impl Default for LogStruct {
 fn init() -> LoggerGuard {
     // Rotate every day, clean stale logs that were modified 7 days ago on each rotation
     let writer = FileAppender::builder()
-        .path("current.log")
+        .path("logs/current.log")
         .rotate(Period::Minute)
         .expire(Duration::minutes(4))
         .build();
@@ -34,7 +34,7 @@ fn init() -> LoggerGuard {
         .unbounded()
         // write logs in ftlog::appender to "./ftlog-appender.log" instead of "./current.log"
         .filter("ftlog::appender", "ftlog-appender", LevelFilter::Error)
-        .appender("ftlog-appender", FileAppender::new("ftlog-appender.log"))
+        .appender("ftlog-appender", FileAppender::new("logs/ftlog-appender.log"))
         .try_init()
         .expect("logger build or set failed")
 }
