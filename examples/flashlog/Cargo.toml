@@ -1,10 +1,15 @@
 [package]
-name = "example-log"
+name = "example-flashlog"
 version = "0.1.0"
 edition = "2021"
 publish = false
 
+[features]
+arr = []
+i32 = []
+
+
 [dependencies]
-flashlog = { version = "1.0", path = "../../" }
+flashlog = { version = "0.1", path = "../../" }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }

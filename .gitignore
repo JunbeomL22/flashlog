@@ -1,3 +1,6 @@
 /target
 *.log*
 /data
+/examples/ftlog/target
+/examples/fast_log/target
+/examples/flashlog/target

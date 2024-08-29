@@ -1,13 +1,12 @@
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
-
-use flashlog::{
-    LogLevel, Logger, TimeZone,
-    get_unix_nano,
-    log_info,
-    info,
-    flushing_log_info as flush,
+use ftlog::{
+    appender::{file::Period, FileAppender},
+    info, LoggerGuard,
 };
+use log::LevelFilter;
+use time::Duration;
+use flashlog::get_unix_nano;
+use serde::{Serialize, Deserialize};
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogStruct {
@@ -20,19 +19,30 @@ impl Default for LogStruct {
     }
 }
 
-fn flashlog_array_80bytes() -> Result<()> {
-    let logger = Logger::initialize()
-        .with_file("logs", "message")?
-        .with_console_report(false)
-        .with_msg_buffer_size(1000_000)
-        .with_msg_flush_interval(1000_000)
-        .with_max_log_level(LogLevel::Info)
-        .with_timezone(TimeZone::Local)
-        .launch();
+fn init() -> LoggerGuard {
+    // Rotate every day, clean stale logs that were modified 7 days ago on each rotation
+    let writer = FileAppender::builder()
+        .path("current.log")
+        .rotate(Period::Minute)
+        .expire(Duration::minutes(4))
+        .build();
+    ftlog::Builder::new()
+        // global max log level
+        .max_log_level(LevelFilter::Info)
+        // define root appender, pass None would write to stderr
+        .root(writer)
+        .unbounded()
+        // write logs in ftlog::appender to "./ftlog-appender.log" instead of "./current.log"
+        .filter("ftlog::appender", "ftlog-appender", LevelFilter::Error)
+        .appender("ftlog-appender", FileAppender::new("ftlog-appender.log"))
+        .try_init()
+        .expect("logger build or set failed")
+}
 
-    let iteration = 5000;
+fn ftlog_arr_80byte() {
+    let logger = init();
+    let iteration = 500_000;
     let test_number = 5;
-    
     let log_struct = LogStruct::default();
     let mut res_vec = Vec::new();
 
@@ -44,10 +54,8 @@ fn flashlog_array_80bytes() -> Result<()> {
         info!("Warm up");
         let start = get_unix_nano();
         for _ in 0..iteration {
-            let test_clone = log_struct.clone();
-            log_info!("Log message", test_struct = test_clone);
-        }    
-        flush!("flushing", data = "");
+            info!("Log message: {:?}", &log_struct);
+        }
         let elapsed = get_unix_nano() - start;
         res_vec.push(elapsed);
     }
@@ -59,28 +67,15 @@ fn flashlog_array_80bytes() -> Result<()> {
     }
 
     println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
-
-    drop(logger);
-    Ok(())
 }
 
-fn flashlog_i32() -> Result<()> {
-    let logger = Logger::initialize()
-        .with_file("logs", "message")?
-        .with_console_report(false)
-        .with_msg_buffer_size(1000_000)
-        .with_msg_flush_interval(1000_000)
-        .with_max_log_level(LogLevel::Info)
-        .with_timezone(TimeZone::Local)
-        .launch();
-
+fn ftlog_i32() {
+    let logger = init();
     let iteration = 500_000;
     let test_number = 5;
-    
-    let log_struct = LogStruct::default();
     let mut res_vec = Vec::new();
 
-    println!("Start test: i32 ");
+    println!("Start test: i32");
     println!("Iteration: {}, Test number: {}", iteration, test_number);
     println!("At each test, sleep for 2 seconds and log warm up msg");
     for _ in 0..test_number {
@@ -88,10 +83,8 @@ fn flashlog_i32() -> Result<()> {
         info!("Warm up");
         let start = get_unix_nano();
         for i in 0..iteration {
-            let test_clone = log_struct.clone();
-            log_info!("Log message", test_struct = i);
-        }    
-        flush!("flushing", data = "");
+            info!("Log message: {}", i);
+        }
         let elapsed = get_unix_nano() - start;
         res_vec.push(elapsed);
     }
@@ -103,15 +96,11 @@ fn flashlog_i32() -> Result<()> {
     }
 
     println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
-    drop(logger);
-    Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() {
     #[cfg(feature = "i32")]
-    flashlog_i32();
-    
+    ftlog_i32();
     #[cfg(feature = "arr")]
-    flashlog_array_80bytes();
-    Ok(())
+    ftlog_arr_80byte();
 }
