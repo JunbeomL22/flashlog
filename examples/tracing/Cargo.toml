@@ -1,0 +1,19 @@
+[package]
+name = "example-tracing"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+arr = []
+i32 = []
+
+
+[dependencies]
+anyhow = "1.0"
+flashlog = { version = "0.1", path = "../../" }
+time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing", "local-offset"] }
+serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"

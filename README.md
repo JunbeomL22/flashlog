@@ -173,6 +173,10 @@ Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8,
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+## Authors
+
+- [Junbeom Lee](https://github.com/JunbeomL22)
+- [Youngjin Park](https://github.com/youngjin-create)
 
 ## License
 
