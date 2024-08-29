@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Junbeom Lee <junbeoml22@gmail.com>"]
 description = "A fast logging library for Rust"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/JunbeomL22/flashlog"
+repository = "github.com/JunbeomL22/flashlog"
 
 [lib]
 name = "flashlog"
