@@ -1,5 +1,5 @@
 # FlashLog
-A logging library for Rust. This logging system is Lazy. As a result, it is blazingly fast.
+A fast Rust logging library. This logging system is lazy. As a result, it is blazingly fast.
 To explain more specifically, aside from struct cloning and timestamp (unix nano) marking, 
 most evaluations are performed in the logger thread. To the best of my knowledge, it is the fastest among most logging systems designed for Rust. Log messages are printed in JSON format. Additionally, it provides LazyString for optimization.
 
