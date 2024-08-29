@@ -26,7 +26,7 @@
 //! Basic usage example:
 //! 
 //! ```rust
-//! use flashlog::{Logger, LogLevel, log_info};
+//! use flashlog::{Logger, LogLevel, info};
 //! 
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let logger = Logger::initialize()
@@ -34,7 +34,7 @@
 //!         .with_max_log_level(LogLevel::Info)
 //!         .launch();
 //! 
-//!     log_info!("Hello, FlashLog!");
+//!     info!("Hello, FlashLog!");
 //! 
 //!     Ok(())
 //! }
