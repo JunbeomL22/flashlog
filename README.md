@@ -1,25 +1,54 @@
 # FlashLog
-A fast Rust logging library. This logging system is lazy. As a result, it is blazingly fast.
-To explain more specifically, aside from struct cloning and timestamp (unix nano) marking, 
-most evaluations are performed in the logger thread. To the best of my knowledge, it is the fastest among most logging systems designed for Rust. Log messages are printed in JSON format. Additionally, it provides LazyString for optimization.
 
-# Usage
-```Cargo.toml```:
+A blazingly fast Rust logging library with lazy evaluation.
+
+[![Crates.io](https://img.shields.io/crates/v/flashlog.svg)](https://crates.io/crates/flashlog)
+[![Documentation](https://docs.rs/flashlog/badge.svg)](https://docs.rs/flashlog)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Features
+
+- **Lazy Evaluation**: Most evaluations are performed in the logger thread, resulting in exceptional performance.
+- **JSON Output**: Log messages are printed in `JSON` format for easy parsing and analysis.
+- **LazyString**: Provides `LazyString` for optimized string interpolation.
+- **Customizable**: Flexible configuration options for file output, console reporting, buffer size, and more.
+- **Timezone Support**: Ability to set local or custom timezones for log timestamps.
+
+## Quick Start
+
+Add FlashLog to your `Cargo.toml`:
+
 ```toml
 [dependencies]
 flashlog = "0.1"
 ```
-The following example is logging a struct that contains array of ```u64```
-```Rust
+
+Basic usage example:
+
+```rust
+use flashlog::{Logger, LogLevel, log_info};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let logger = Logger::initialize()
+        .with_file("logs", "message")?
+        .with_max_log_level(LogLevel::Info)
+        .launch();
+
+    log_info!("Hello, FlashLog!");
+
+    Ok(())
+}
+```
+
+## Advanced Usage
+
+### Logging Structs
+
+FlashLog can easily log custom structs:
+
+```rust
 use serde::{Deserialize, Serialize};
-use flashlog::{
-    LogLevel, Logger, TimeZone,
-    get_unix_nano,
-    log_info,
-    info,
-    flushing_log_info as flush,
-};
-use anyhow::Result;
+use flashlog::{Logger, LogLevel, log_info};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogStruct {
@@ -32,44 +61,59 @@ impl Default for LogStruct {
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let logger = Logger::initialize()
-            // folder and file name
-            .with_file("logs", "message")?
-            .with_console_report(false)
-            // In the logger thread, the messages are filled in a buffer
-            // It flushes the messages where the length is more than 1,000,000
-            .with_msg_buffer_size(1_000_000)
-            // The messages are flushed if it has been passed 1,000,000 ns from the last flush
-            .with_msg_flush_interval(1_000_000)
-            .with_max_log_level(LogLevel::Info)
-            .with_timezone(TimeZone::Local)
-            .launch();
+        .with_file("logs", "message")?
+        .with_max_log_level(LogLevel::Info)
+        .launch();
 
     let log_struct = LogStruct::default();
-    info!("Warm up");
     log_info!("Log message", log_struct = log_struct);
-    // this macro flushes message regardless of the options
-    flush!("flushing", data = "");
 
     Ok(())
 }
 ```
-The following ```Json``` is the result of the above: 
-```Json
-{"data":{"text":"Warm up"}, "date":"20240829", "level":"Info","offset":9,
-"src":"src/main.rs:135","time":"20:08:21.071:409:907","topic":"not given"}
-{"data":{"log_struct":{"data":[1,2,3,4,5,6,7,8,9,10]}},"date":"20240829","level":"Info",
-"offset":9,"src":"src/main.rs:136","time":"20:08:21.071:410:277","topic":"Log message"}
-{"data":{"data":""},"date":"20240829","level":"Info","offset":9,"src":"src/main.rs:138",
-"time":"20:08:21.071:410:408","topic":"flushing"}
+
+### Using LazyString for Optimization
+
+```rust
+use flashlog::{lazy_string::LazyString, log_info};
+
+let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); // Evaluated in logger thread
+log_info!("LazyOne", msg = lazy_msg);
 ```
-For optimization, this crate supports a lazy string which can defer string interpolation to the logger thread
-```Rust
-use flashlog::lazy_string::LazyString;
-let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); // This will be evaluated in the logger thread
-log_info!("LazyOne", msg = lazy_msg);   
+
+## Configuration Options
+
+FlashLog offers various configuration options:
+
+```rust
+let logger = Logger::initialize()
+    .with_file("logs", "message")?
+    .with_console_report(false)
+    .with_msg_buffer_size(1_000_000)
+    .with_msg_flush_interval(1_000_000)
+    .with_max_log_level(LogLevel::Info)
+    .with_timezone(TimeZone::Local)
+    .launch();
 ```
+
+## Output Format
+
+Logs are outputted in JSON format for easy parsing:
+
+```json
+{
+  "data": {"text": "Warm up"},
+  "date": "20240829",
+  "level": "Info",
+  "offset": 9,
+  "src": "src/main.rs:135",
+  "time": "20:08:21.071:409:907",
+  "topic": "not given"
+}
+```
+
 # Benchmark
 ## Test configurations
 Print 500,000 logs. Perform the test 5 times. Before each test, sleep for 2 seconds, then print a warm-up message, and then continuously print 500,000 messages. Test has been done on two types: i32 and
@@ -125,3 +169,11 @@ Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8,
 | fast_log  | 410 ns        | 358 ns          |
 | slog      | 250 ns        | 452 ns          |
 | fern      | 3,813 ns       | 3,962 ns         |
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
