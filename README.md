@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```rust
 use flashlog::{lazy_string::LazyString, log_info};
 
-let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); // Evaluated in logger thread
+let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); // evaluated in the logger thread
 log_info!("LazyOne", msg = lazy_msg);
 ```
 
