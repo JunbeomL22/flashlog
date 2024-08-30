@@ -1,0 +1,13 @@
+[package]
+name = "example-defmt"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[features]
+arr = []
+i32 = []
+
+
+[dependencies]
+defmt = { version = "0.3", features = ["cortex-m"] }
