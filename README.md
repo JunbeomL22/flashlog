@@ -176,6 +176,7 @@ Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8,
 | fast_log  | 410 ns        | 358 ns          |
 | slog      | 250 ns        | 452 ns          |
 | fern      | 3,813 ns      | 3,962 ns        |
+| tracing   | 4,003 ns      | 4,258 ns        | 
 
 ## Contributing
 
