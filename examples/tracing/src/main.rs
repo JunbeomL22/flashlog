@@ -18,12 +18,12 @@ impl Default for LogStruct {
 
 fn tracing_i32() {
     // Set up a rolling file appender that rotates daily
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "logs/i32.log");
+    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "i32.log");
 
     // Create a subscriber that writes to the file appender
     let subscriber = tracing_subscriber::registry()
-        .with(fmt::Layer::new().with_writer(file_appender).with_ansi(false))
-        .with(EnvFilter::from_default_env());
+        .with(fmt::Layer::new().with_writer(file_appender).with_ansi(false));
+        //..with(EnvFilter::from_default_env());
 
     // Set the subscriber as the global default
     tracing::subscriber::set_global_default(subscriber)
@@ -49,7 +49,7 @@ fn tracing_i32() {
         res_vec.push(elapsed);
     }
 
-    let ave_res: Vec<u64> = res_vec.iter().map(|x| x / iteration).collect();
+    let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
 
     for (i, res) in ave_res.iter().enumerate() {
         println!("Test {}: average time: {} ns", i, res);
@@ -60,12 +60,12 @@ fn tracing_i32() {
 
 fn tracing_array_80bytes() {
     // Set up a rolling file appender that rotates daily
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "logs/array_80bytes.log");
+    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "arr.log");
 
     // Create a subscriber that writes to the file appender
     let subscriber = tracing_subscriber::registry()
-        .with(fmt::Layer::new().with_writer(file_appender).with_ansi(false))
-        .with(EnvFilter::from_default_env());
+        .with(fmt::Layer::new().with_writer(file_appender).with_ansi(false));
+        //.with(EnvFilter::from_default_env());
 
     // Set the subscriber as the global default
     tracing::subscriber::set_global_default(subscriber)
