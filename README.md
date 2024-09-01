@@ -79,7 +79,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```rust
 use flashlog::{lazy_string::LazyString, log_info};
 
-let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); // evaluated in the logger thread
+// The format in the LazyString is evaluated in the logger thread. 
+// The creation takes around 1.5 ns regardless of the interpolation number
+let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); 
 log_info!("LazyOne", msg = lazy_msg);
 ```
 

@@ -78,8 +78,9 @@
 //! 
 //! ```rust
 //! use flashlog::{lazy_string::LazyString, log_info};
-//! 
-//! let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); // Evaluated in logger thread
+//! //The format in the LazyString is evaluated in the logger thread. 
+//! //The creation takes around 1.5 ns regardless of the interpolation number
+//! let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); 
 //! log_info!("LazyOne", msg = lazy_msg);
 //! ```
 //! 
@@ -88,8 +89,10 @@
 //! FlashLog offers various configuration options:
 //! 
 //! ```rust
+//! use flashlog::{Logger, LogLevel, TimeZone};
+//! 
 //! let logger = Logger::initialize()
-//!     .with_file("logs", "message")?
+//!     .with_file("logs", "message").expect("faied to create log file")
 //!     .with_console_report(false)
 //!     .with_msg_buffer_size(1_000_000)
 //!     .with_msg_flush_interval(1_000_000)

@@ -9,7 +9,7 @@ use std::ops::Deref;
 /// use flashlog::lazy_string::LazyString;
 /// 
 /// let lazy_string = LazyString::new(|| format!("{} {} {}", 1, 2, 3));
-/// flashlog::info!(message = lazy_string); // the interpolation is done in the logger thread
+/// flashlog::log_info!("LazyOne", message = lazy_string); // the interpolation is done in the logger thread
 /// ```
 pub struct LazyString {
     cell: OnceCell<String>,
