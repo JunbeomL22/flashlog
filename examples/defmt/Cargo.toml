@@ -4,10 +4,16 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
-[features]
-arr = []
-i32 = []
-
-
 [dependencies]
-defmt = { version = "0.3", features = ["cortex-m"] }
+defmt = "0.3"
+defmt-rtt = "0.4"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+
+[features]
+default = ["defmt-default"]
+defmt-default = []
+defmt-trace = []
+defmt-debug = []
+defmt-info = []
+defmt-warn = []
+defmt-error = []

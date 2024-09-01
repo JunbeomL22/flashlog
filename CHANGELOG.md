@@ -6,10 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Benchmark ```defmt``` and ```tracing```
-- Binary serialization support
-- Separate enum implementation
-- interning ```LazyString```
+- Benchmark  ```tracing```
 
 ## [0.1.1] - 2024-08-29
 ### Fixed
