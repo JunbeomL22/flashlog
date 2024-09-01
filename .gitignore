@@ -6,4 +6,5 @@
 /examples/flashlog/target
 /examples/slog/target
 /examples/*/target
+/exmaples/logs
 README-cache.md

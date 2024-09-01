@@ -1,11 +1,15 @@
 [package]
 name = "flashlog"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 authors = ["Junbeom Lee <junbeoml22@gmail.com>"]
 description = "A fast logging library for Rust"
 license = "MIT OR Apache-2.0"
-repository = "github.com/JunbeomL22/flashlog"
+repository = "https://github.com/JunbeomL22/flashlog"
+
+[[bench]]
+name = "binaryser"
+harness = false
 
 [lib]
 name = "flashlog"
@@ -25,9 +29,7 @@ crossbeam-utils = "0.8"
 crossbeam-channel = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-ftlog = "0.2"
-log = "0.4"
-
+serde_derive = "1.0"
 
 [profile.release]
 opt-level = 3
