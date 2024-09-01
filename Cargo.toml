@@ -8,8 +8,9 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/JunbeomL22/flashlog"
 
 [[bench]]
-name = "binaryser"
+name = "lazy_string"
 harness = false
+
 
 [lib]
 name = "flashlog"

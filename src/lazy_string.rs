@@ -6,6 +6,8 @@ use std::ops::Deref;
 /// All time consuming operations are deferred to the logger thread.
 /// # Example
 /// ```
+/// use flashlog::lazy_string::LazyString;
+/// 
 /// let lazy_string = LazyString::new(|| format!("{} {} {}", 1, 2, 3));
 /// flashlog::info!(message = lazy_string); // the interpolation is done in the logger thread
 /// ```
