@@ -90,7 +90,7 @@ log_info!("LazyOne", msg = lazy_msg);
 FlashLog offers various configuration options:
 
 ```rust
-use flashlog::{info, flush, flushing_log_info, Logger, LoggerLovel, TimeZone}
+use flashlog::{info, flush, flushing_log_info, Logger, LogLevel, TimeZone}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _logger = Logger::initialize()

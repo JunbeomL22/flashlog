@@ -249,7 +249,7 @@ impl std::fmt::Display for LogLevel {
 }
 #[macro_export]
 macro_rules! flush {
-    ($($arg:tt)*) => {{
+    () => {{
         $crate::LOG_SENDER.try_send($crate::LogMessage::Flush).unwrap();
     }};
 }
