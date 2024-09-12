@@ -24,7 +24,7 @@ impl Default for LogStruct {
 fn flashlog_array_80bytes() -> Result<()> {
     let logger = Logger::initialize()
         .with_file("logs", "message")?
-        .with_console_report(false)
+        .with_console_report(true)
         .with_msg_buffer_size(1000_000)
         .with_msg_flush_interval(1000_000)
         .with_max_log_level(LogLevel::Info)
@@ -107,7 +107,7 @@ fn flashlog_i32() -> Result<()> {
     drop(logger);
     Ok(())
 }
-/*
+
 fn main() -> Result<()> {
     #[cfg(feature = "i32")]
     flashlog_i32();
@@ -116,8 +116,8 @@ fn main() -> Result<()> {
     flashlog_array_80bytes();
     Ok(())
 }
-    */
-
+    
+/*
 fn main() -> Result<()> {
     let logger = Logger::initialize()
             // folder and file name
@@ -142,4 +142,4 @@ fn main() -> Result<()> {
     flush!("flushing", data = "");
 
     Ok(())
-}
+} */
