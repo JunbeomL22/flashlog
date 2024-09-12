@@ -91,7 +91,7 @@ FlashLog offers various configuration options:
 
 ```rust
 let logger = Logger::initialize()
-    .with_file("logs", "message")? // 
+    .with_file("logs", "message")? // without this the the log dose not report a file
     .with_console_report(false)
     .with_msg_buffer_size(1_000_000)
     .with_msg_flush_interval(1_000_000)
