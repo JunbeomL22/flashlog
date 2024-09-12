@@ -90,14 +90,26 @@ log_info!("LazyOne", msg = lazy_msg);
 FlashLog offers various configuration options:
 
 ```rust
-let logger = Logger::initialize()
+use flashlog::{info, flush, flushing_log_info, Logger, LoggerLovel, TimeZone}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _logger = Logger::initialize()
     .with_file("logs", "message")? // without this the the logger dose not report a file
-    .with_console_report(false)
-    .with_msg_buffer_size(1_000_000)
-    .with_msg_flush_interval(1_000_000)
-    .with_max_log_level(LogLevel::Info)
+    .with_console_report(true) // true means it reports to console too
+    .with_msg_flush_interval(2_000_000_000) // flushing interval is 2 bil nano seconds = 2 seconds
+    .with_msg_buffer_size(1_000_000) // but messages are flushed when the accumulated messages length are longer than 1mil
+    .with_max_log_level(LogLevel::Debug)
     .with_timezone(TimeZone::Local)
     .launch();
+
+    info!("Warm up"); // pushed in message queue but not reported, 
+    // this will be reported when another log comes in after 2 seconds (with_msg_flush_interval = 2_000_000_000)
+    flush!(); // without this the logger does not report any message 
+    // since the time and msg length conditions are not met
+    flushing_log_info!("Log message", data = "data"); // This logs and flushes together
+
+    Ok(())
+}
 ```
 
 ## Output Format

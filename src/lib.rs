@@ -89,16 +89,19 @@
 //! FlashLog offers various configuration options:
 //! 
 //! ```rust
-//! use flashlog::{Logger, LogLevel, TimeZone};
+//! use flashlog::{Logger, LogLevel, TimeZone, info, flush};
 //! 
-//! let logger = Logger::initialize()
+//! let _logger = Logger::initialize()
 //!     .with_file("logs", "message").expect("faied to create log file")
 //!     .with_console_report(false)
-//!     .with_msg_buffer_size(1_000_000)
-//!     .with_msg_flush_interval(1_000_000)
+//!     .with_msg_buffer_size(1_000_000) // 1 million characters can be stored in the buffer
+//!     .with_msg_flush_interval(1_000_000_000) // 1 second
 //!     .with_max_log_level(LogLevel::Info)
 //!     .with_timezone(TimeZone::Local)
 //!     .launch();
+//! 
+//! info!("Hello, FlashLog!");
+//! flush!();
 //! ```
 //! 
 //! ## Output Format

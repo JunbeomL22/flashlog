@@ -7,6 +7,7 @@ publish = false
 [features]
 arr = []
 i32 = []
+test = []
 
 
 [dependencies]

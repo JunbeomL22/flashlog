@@ -291,7 +291,7 @@ dependencies = [
 
 [[package]]
 name = "flashlog"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "anyhow",
  "chrono",

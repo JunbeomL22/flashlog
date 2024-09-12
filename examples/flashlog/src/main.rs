@@ -5,9 +5,9 @@ use flashlog::lazy_string::LazyString;
 use flashlog::{
     LogLevel, Logger, TimeZone,
     get_unix_nano,
-    log_info,
+    log_info, debug, flush,
     info,
-    flushing_log_info as flush,
+    flushing_log_info,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -108,12 +108,34 @@ fn flashlog_i32() -> Result<()> {
     Ok(())
 }
 
+fn test_logger() -> Result<()> {
+    let _logger = Logger::initialize()
+        .with_file("logs", "message")? // without this the the logger dose not report a file
+        .with_console_report(true) // true means it reports to console too
+        .with_msg_flush_interval(2_000_000_000) // flushing interval is 2 bil nano seconds = 2 seconds
+        .with_msg_buffer_size(1_000_000) // but messages are flushed the 
+        .with_max_log_level(LogLevel::Debug)
+        .with_timezone(TimeZone::Local)
+        .launch();
+
+    info!("Warm up"); // pushed in message queue but not reported, 
+    // this will be reported when another log comes in after 2 seconds (with_msg_flush_interval = 2_000_000_000)
+    flush!(); // without this the logger does not report any message 
+    // since the time and msg length conditions are not met
+    flushing_log_info!("Log message", data = "data"); // This logs and flushes together
+    Ok(())
+}
+
 fn main() -> Result<()> {
     #[cfg(feature = "i32")]
     flashlog_i32();
     
     #[cfg(feature = "arr")]
     flashlog_array_80bytes();
+    
+    #[cfg(feature = "test")]
+    test_logger();
+
     Ok(())
 }
     

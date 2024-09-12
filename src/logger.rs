@@ -21,8 +21,8 @@ use std::{
 
 static LOG_MESSAGE_BUFFER_SIZE: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(1_000_000));
 //2_000_000; // string length
-static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(2_000_000));
-//2_000_000; // 2 second
+static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(500_000_000));
+//2_000_000_000; // 2 second
 
 pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> =
     Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
@@ -132,6 +132,21 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         ));
                     }
                 }
+                LogMessage::Flush => {
+                    let output = message_queue.join("");
+                    if FILE_REPORT.load(Ordering::Relaxed) {
+                        if let Some(ref mut writer) = writer {
+                            writer.write_all(output.as_bytes()).unwrap();
+                            writer.flush().unwrap();
+                            let _ = writer.get_mut().sync_all();
+                        }
+                    }
+                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                        println!("{}", output);
+                    }
+                    message_queue.clear();
+                    last_flush_time = get_unix_nano();
+                }
                 LogMessage::SetCore => {
                     let core_ids = core_affinity::get_core_ids().unwrap();
                     if let Some(last_core_id) = core_ids.first() {
@@ -141,16 +156,16 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     }
                 }
                 LogMessage::Close => {
-                    if let Some(ref mut writer) = writer {
-                        let output = message_queue.join("");
-                        if FILE_REPORT.load(Ordering::Relaxed) {
+                    let output = message_queue.join("");
+                    if FILE_REPORT.load(Ordering::Relaxed) {
+                        if let Some(ref mut writer) = writer {
                             writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().unwrap();
                             let _ = writer.get_mut().sync_all();
                         }
-                        if CONSOLE_REPORT.load(Ordering::Relaxed) {
-                            println!("{}", output);
-                        }
+                    }
+                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                        println!("{}", output);
                     }
                     break;
                 }
@@ -232,7 +247,12 @@ impl std::fmt::Display for LogLevel {
         }
     }
 }
-
+#[macro_export]
+macro_rules! flush {
+    ($($arg:tt)*) => {{
+        $crate::LOG_SENDER.try_send($crate::LogMessage::Flush).unwrap();
+    }};
+}
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
@@ -568,6 +588,7 @@ pub enum LogMessage {
     FlushingMessage(LazyMessage),
     StaticString(&'static str),
     SetFile(PathBuf),
+    Flush,
     SetCore,
     Close,
 }
@@ -598,10 +619,10 @@ mod tests {
     #[test]
     fn test_logger() -> Result<()> {
         let _guard = Logger::initialize()
-            .with_file("logs", "test")?
+            //.with_file("logs", "test")?
             .with_console_report(true)
             .with_max_log_level(LogLevel::Info)
-            .with_timezone(TimeZone::Local)
+            //.with_timezone(TimeZone::Local)
             .launch();
 
         info!("warm up");
