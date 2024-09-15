@@ -30,6 +30,19 @@
 //! ```rust
 //! use flashlog::{flash_error, flash_debug, flush, Logger, LogLevel, TimeZone};
 //! 
+//! pub enum Hello {
+//!    FlashLog,
+//!    World,
+//! }
+//! 
+//! impl std::fmt::Display for Hello {
+//!     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//!         match self {
+//!             Hello::FlashLog => write!(f, "FlashLog"),
+//!             Hello::World => write!(f, "World"),
+//!         }
+//!     }
+//! }
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let _logger = Logger::initialize()
 //!         .with_file("logs", "message")? // without this the logger does not report a file
