@@ -142,9 +142,7 @@ struct LogStruct {
 ## message examples for the struct
 ### flashlog: [test-file](./examples/flashlog/src/main.rs)
 ```Json
-{"data": {"test_struct":{"data":[1,2,3,4,5,6,7,8,9,10]}},
-"date":"20240829","level":"Info",
-"offset":9,"src":"src/main.rs:48","time":"09:22:14.328:084:318","topic":"Log message"}
+{"data":{"log_struct":{"data":[1,2,3,4,5,6,7,8,9,10]}},"date":"20240915","level":"Info","message":"","offset":9,"src":"src/main.rs:52","time":"20:52:02.998:044:806","topic":"Bench"}
 ```
 
 ### ftlog: [test-file](./examples/ftlog/src/main.rs)
