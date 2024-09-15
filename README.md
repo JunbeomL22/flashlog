@@ -19,7 +19,7 @@ Add FlashLog to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-flashlog = "0.1"
+flashlog = "0.2"
 ```
 
 Basic usage example:
@@ -104,25 +104,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_timezone(TimeZone::Local)              // Use local timezone for timestamps
         .launch();
 
-    flash_error!(Hello::FlashLog);
+    flash_info!(Hello::FlashLog);
     // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:346","time":"20:34:30.684:921:877","topic":"World"}
-    flash_error!(Hello::World);
+    flash_info!(Hello::World);
     // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:347","time":"20:34:30.684:922:238","topic":"FlashLog"}
-    flash_debug!("Hello");
+    flash_info!("Hello");
     // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:348","time":"20:34:30.684:922:488","topic":"Hello"}
-    flash_error!("Hello"; "FlashLog");
+    flash_info!("Hello"; "FlashLog");
     // {"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:349","time":"20:34:30.684:922:739","topic":"Hello"}
-    flash_error!("Hello"; "FlashLog"; version = "0.1.0");
+    flash_info!("Hello"; "FlashLog"; version = "0.1.0");
     // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:350","time":"20:34:30.684:924:813","topic":"Hello"}
-    flash_error!("Hello"; "FlashLog"; version = "0.1.0", author = "John Doe");
+    flash_info!("Hello"; "FlashLog"; version = "0.1.0", author = "John Doe");
     // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:351","time":"20:34:30.684:925:143","topic":"Hello"}
-    flash_error!(version = "0.1.0");
+    flash_info!(version = "0.1.0");
     // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:352","time":"20:34:30.684:925:394","topic":""}
-    flash_error!(version = "0.1.0", author = "John Doe");
+    flash_info!(version = "0.1.0", author = "John Doe");
     // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:353","time":"20:34:30.684:925:654","topic":""}
-    flash_error!("topic1"; "message {} {}", 1, 2);
+    flash_info!("topic1"; "message {} {}", 1, 2);
     // {"data":"","date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:354","time":"20:34:30.684:925:955","topic":"topic1"}
-    flash_error!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+    flash_info!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
     // {"data":{"struct_info":1,"struct_info2":2},"date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:355","time":"20:34:30.684:926:847","topic":"topic2"}
     flush!(); // this flushes regardless of the buffer size and flush interval
 
