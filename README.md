@@ -25,7 +25,7 @@ flashlog = "0.2"
 Basic usage example:
 
 ```rust
-use flashlog::{Logger, LogLevel, info};
+use flashlog::{Logger, LogLevel, flash_info};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let logger = Logger::initialize()
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_max_log_level(LogLevel::Info)
         .launch();
 
-    info!("Hello, FlashLog!");
+    flash_info!("Hello, FlashLog!");
 
     Ok(())
 }
