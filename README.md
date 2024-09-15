@@ -48,7 +48,7 @@ FlashLog can easily log custom structs:
 
 ```rust
 use serde::{Deserialize, Serialize};
-use flashlog::{Logger, LogLevel, log_info};
+use flashlog::{Logger, LogLevel, flash_info};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogStruct {
@@ -68,63 +68,66 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .launch();
 
     let log_struct = LogStruct::default();
-    log_info!("Log message", log_struct = log_struct);
+    flash_info!("Log message"; log_struct = log_struct);
 
     Ok(())
 }
 ```
 
-### Using LazyString for Optimization
+## Configuration and Lof Interfaces
+
+Topic and message are optional and separated by a semicolon. In addition, messages can be added with key-value pairs
 
 ```rust
-use flashlog::{lazy_string::LazyString, log_info};
+use flashlog::{flash_info, flush, Logger, LogLevel, TimeZone};
 
-// The format in the LazyString is evaluated in the logger thread. 
-// The creation takes around 1.5 ns regardless of the interpolation number
-let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); 
-log_info!("LazyOne", msg = lazy_msg);
-```
+pub enum Hello {
+    World,
+    FlashLog,
+}
 
-## Configuration Options
-
-FlashLog offers various configuration options:
-
-```rust
-use flashlog::{info, flush, flushing_log_info, Logger, LogLevel, TimeZone}
+impl std::fmt::Display for Hello {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Hello::World => write!(f, "World"),
+            Hello::FlashLog => write!(f, "FlashLog"),
+        }
+    }
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _logger = Logger::initialize()
-    .with_file("logs", "message")? // without this the the logger dose not report a file
-    .with_console_report(true) // true means it reports to console too
-    .with_msg_flush_interval(2_000_000_000) // flushing interval is 2 bil nano seconds = 2 seconds
-    .with_msg_buffer_size(1_000_000) // but messages are flushed when the accumulated messages length are longer than 1mil
-    .with_max_log_level(LogLevel::Debug)
-    .with_timezone(TimeZone::Local)
-    .launch();
+        .with_file("logs", "message")?               // Log to a file called "message" in the "logs" directory
+        .with_console_report(true)                   // Enable logging to the console
+        .with_msg_flush_interval(2_000_000_000)      // Flush every 2 seconds
+        .with_msg_buffer_size(1_000_000)             // Flush when the message buffer exceeds 1 million characters
+        .with_max_log_level(LogLevel::Debug)         // Set the maximum log level to Debug
+        .with_timezone(TimeZone::Local)              // Use local timezone for timestamps
+        .launch();
 
-    info!("Warm up"); // pushed in message queue but not reported, 
-    // this will be reported when another log comes in after 2 seconds (with_msg_flush_interval = 2_000_000_000)
-    flush!(); // without this the logger does not report any message 
-    // since the time and msg length conditions are not met
-    flushing_log_info!("Log message", data = "data"); // This logs and flushes together
+    flash_error!(Hello::FlashLog);
+    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:346","time":"20:34:30.684:921:877","topic":"World"}
+    flash_error!(Hello::World);
+    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:347","time":"20:34:30.684:922:238","topic":"FlashLog"}
+    flash_debug!("Hello");
+    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:348","time":"20:34:30.684:922:488","topic":"Hello"}
+    flash_error!("Hello"; "FlashLog");
+    // {"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:349","time":"20:34:30.684:922:739","topic":"Hello"}
+    flash_error!("Hello"; "FlashLog"; version = "0.1.0");
+    // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:350","time":"20:34:30.684:924:813","topic":"Hello"}
+    flash_error!("Hello"; "FlashLog"; version = "0.1.0", author = "John Doe");
+    // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:351","time":"20:34:30.684:925:143","topic":"Hello"}
+    flash_error!(version = "0.1.0");
+    // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:352","time":"20:34:30.684:925:394","topic":""}
+    flash_error!(version = "0.1.0", author = "John Doe");
+    // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:353","time":"20:34:30.684:925:654","topic":""}
+    flash_error!("topic1"; "message {} {}", 1, 2);
+    // {"data":"","date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:354","time":"20:34:30.684:925:955","topic":"topic1"}
+    flash_error!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+    // {"data":{"struct_info":1,"struct_info2":2},"date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:355","time":"20:34:30.684:926:847","topic":"topic2"}
+    flush!(); // this flushes regardless of the buffer size and flush interval
 
     Ok(())
-}
-```
-
-## Output Format
-
-Logs are outputted in JSON format for easy parsing:
-
-```json
-{
-  "data": {"text": "Warm up"},
-  "date": "20240829",
-  "level": "Info",
-  "offset": 9,
-  "src": "src/main.rs:135",
-  "time": "20:08:21.071:409:907",
-  "topic": "not given"
 }
 ```
 

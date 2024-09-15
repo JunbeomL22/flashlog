@@ -20,103 +20,49 @@
 //! 
 //! ```toml
 //! [dependencies]
-//! flashlog = "0.1"
+//! flashlog = "0.2"
 //! ```
 //! 
 //! Basic usage example:
 //! 
+//! Topic and message are optional and separated by a semicolon. In addition, messages can be added with key-value pairs.
+//! 
 //! ```rust
-//! use flashlog::{Logger, LogLevel, info};
+//! use flashlog::{flash_error, flash_debug, flush, Logger, LogLevel, TimeZone};
 //! 
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let logger = Logger::initialize()
-//!         .with_file("logs", "message")?
-//!         .with_max_log_level(LogLevel::Info)
+//!     let _logger = Logger::initialize()
+//!         .with_file("logs", "message")? // without this the logger does not report a file
+//!         .with_console_report(true) // true means it reports to console too
+//!         .with_msg_flush_interval(2_000_000_000) // flushing interval is 2 billion nanoseconds = 2 seconds
+//!         .with_msg_buffer_size(1_000_000) // messages are flushed when the accumulated messages length are longer than 1 million
+//!         .with_max_log_level(LogLevel::Debug)
+//!         .with_timezone(TimeZone::Local)
 //!         .launch();
 //! 
-//!     info!("Hello, FlashLog!");
+//!     flash_error!(Hello::FlashLog);
+//!     // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:346","time":"20:34:30.684:921:877","topic":"World"}
+//!     flash_error!(Hello::World);
+//!     // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:347","time":"20:34:30.684:922:238","topic":"FlashLog"}
+//!     flash_debug!("Hello");
+//!     // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:348","time":"20:34:30.684:922:488","topic":"Hello"}
+//!     flash_error!("Hello"; "FlashLog");
+//!     // {"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:349","time":"20:34:30.684:922:739","topic":"Hello"}
+//!     flash_error!("Hello"; "FlashLog"; version = "0.1.0");
+//!     // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:350","time":"20:34:30.684:924:813","topic":"Hello"}
+//!     flash_error!("Hello"; "FlashLog"; version = "0.1.0", author = "John Doe");
+//!     // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:351","time":"20:34:30.684:925:143","topic":"Hello"}
+//!     flash_error!(version = "0.1.0");
+//!     // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:352","time":"20:34:30.684:925:394","topic":""}
+//!     flash_error!(version = "0.1.0", author = "John Doe");
+//!     // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:353","time":"20:34:30.684:925:654","topic":""}
+//!     flash_error!("topic1"; "message {} {}", 1, 2);
+//!     // {"data":"","date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:354","time":"20:34:30.684:925:955","topic":"topic1"}
+//!     flash_error!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+//!     // {"data":{"struct_info":1,"struct_info2":2},"date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:355","time":"20:34:30.684:926:847","topic":"topic2"}
+//!     flush!(); // this flushes regardless of the buffer size and flush interval
 //! 
 //!     Ok(())
-//! }
-//! ```
-//! 
-//! ## Advanced Usage
-//! 
-//! ### Logging Structs
-//! 
-//! FlashLog can easily log custom structs:
-//! 
-//! ```rust
-//! use serde::{Deserialize, Serialize};
-//! use flashlog::{Logger, LogLevel, log_info};
-//! 
-//! #[derive(Debug, Serialize, Deserialize, Clone)]
-//! pub struct LogStruct {
-//!     data: [u64; 10],
-//! }
-//! 
-//! impl Default for LogStruct {
-//!     fn default() -> Self {
-//!         LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }
-//!     }
-//! }
-//! 
-//! fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let logger = Logger::initialize()
-//!         .with_file("logs", "message")?
-//!         .with_max_log_level(LogLevel::Info)
-//!         .launch();
-//! 
-//!     let log_struct = LogStruct::default();
-//!     log_info!("Log message", log_struct = log_struct);
-//! 
-//!     Ok(())
-//! }
-//! ```
-//! 
-//! ### Using LazyString for Optimization
-//! 
-//! ```rust
-//! use flashlog::{lazy_string::LazyString, log_info};
-//! //The format in the LazyString is evaluated in the logger thread. 
-//! //The creation takes around 1.5 ns regardless of the interpolation number
-//! let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3)); 
-//! log_info!("LazyOne", msg = lazy_msg);
-//! ```
-//! 
-//! ## Configuration Options
-//! 
-//! FlashLog offers various configuration options:
-//! 
-//! ```rust
-//! use flashlog::{Logger, LogLevel, TimeZone, info, flush};
-//! 
-//! let _logger = Logger::initialize()
-//!     .with_file("logs", "message").expect("faied to create log file")
-//!     .with_console_report(false)
-//!     .with_msg_buffer_size(1_000_000) // 1 million characters can be stored in the buffer
-//!     .with_msg_flush_interval(1_000_000_000) // 1 second
-//!     .with_max_log_level(LogLevel::Info)
-//!     .with_timezone(TimeZone::Local)
-//!     .launch();
-//! 
-//! info!("Hello, FlashLog!");
-//! flush!();
-//! ```
-//! 
-//! ## Output Format
-//! 
-//! Logs are outputted in JSON format for easy parsing:
-//! 
-//! ```json
-//! {
-//!   "data": {"text": "Warm up"},
-//!   "date": "20240829",
-//!   "level": "Info",
-//!   "offset": 9,
-//!   "src": "src/main.rs:135",
-//!   "time": "20:08:21.071:409:907",
-//!   "topic": "not given"
 //! }
 //! ```
 //! 
@@ -125,6 +71,7 @@
 
 pub mod timer;
 pub mod lazy_string;
+pub mod logger_v2;
 pub mod logger;
 
 pub use crate::timer::{

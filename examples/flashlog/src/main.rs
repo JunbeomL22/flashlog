@@ -5,9 +5,12 @@ use flashlog::lazy_string::LazyString;
 use flashlog::{
     LogLevel, Logger, TimeZone,
     get_unix_nano,
-    log_info, debug, flush,
-    info,
+    flush,
+    flash_info,
+    log_info,
     flushing_log_info,
+    info,
+
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,8 +27,8 @@ impl Default for LogStruct {
 fn flashlog_array_80bytes() -> Result<()> {
     let logger = Logger::initialize()
         .with_file("logs", "message")?
-        .with_console_report(true)
-        .with_msg_buffer_size(1000_000)
+        .with_console_report(false)
+        .with_msg_buffer_size(1000_000_000)
         .with_msg_flush_interval(1000_000)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
@@ -42,13 +45,13 @@ fn flashlog_array_80bytes() -> Result<()> {
     println!("At each test, sleep for 2 seconds and log warm up msg");
     for _ in 0..test_number {
         std::thread::sleep(std::time::Duration::from_secs(2));
-        info!("Warm up");
+        flash_info!("Warm up");
         let start = get_unix_nano();
         for _ in 0..iteration {
             let test_clone = log_struct.clone();
-            log_info!("Log message", test_struct = test_clone);
+            flash_info!("Bench"; log_struct = test_clone);
         }    
-        flush!("flushing", data = "");
+        flush!();
         let elapsed = get_unix_nano() - start;
         res_vec.push(elapsed);
     }
@@ -69,7 +72,7 @@ fn flashlog_i32() -> Result<()> {
     let logger = Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
-        .with_msg_buffer_size(1000_000)
+        .with_msg_buffer_size(1000_000_000)
         .with_msg_flush_interval(1000_000)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
@@ -86,13 +89,12 @@ fn flashlog_i32() -> Result<()> {
     println!("At each test, sleep for 2 seconds and log warm up msg");
     for _ in 0..test_number {
         std::thread::sleep(std::time::Duration::from_secs(2));
-        info!("Warm up");
+        flash_info!("Warm up");
         let start = get_unix_nano();
         for i in 0..iteration {
-            let test_clone = log_struct.clone();
-            log_info!("Log message", test_struct = i);
+            flash_info!("Log message"; log_int = i);
         }    
-        flush!("flushing", data = "");
+        flush!();
         let elapsed = get_unix_nano() - start;
         res_vec.push(elapsed);
     }

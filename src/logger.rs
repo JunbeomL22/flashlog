@@ -1,4 +1,3 @@
-// heavily advised by youngjin park https://github.com/youngjin-create
 use crate::timer::get_unix_nano;
 //
 use anyhow::{anyhow, Result};
@@ -247,12 +246,8 @@ impl std::fmt::Display for LogLevel {
         }
     }
 }
-#[macro_export]
-macro_rules! flush {
-    () => {{
-        $crate::LOG_SENDER.try_send($crate::LogMessage::Flush).unwrap();
-    }};
-}
+
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_error! instead")]
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
@@ -261,6 +256,7 @@ macro_rules! error {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_warn! instead")]
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{
@@ -269,6 +265,7 @@ macro_rules! warn {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_info! instead")]
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {{
@@ -277,6 +274,7 @@ macro_rules! info {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_debug! instead")]
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {{
@@ -285,6 +283,7 @@ macro_rules! debug {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_trace! instead")]
 #[macro_export]
 macro_rules! trace {
     ($($arg:tt)*) => {{
@@ -293,6 +292,7 @@ macro_rules! trace {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_warn! instead")]
 #[macro_export]
 macro_rules! log_warn {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -302,7 +302,8 @@ macro_rules! log_warn {
         $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $struct);
     }};
 }
-
+ 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_info! instead")]
 #[macro_export]
 macro_rules! log_info {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -313,6 +314,7 @@ macro_rules! log_info {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_debug! instead")]
 #[macro_export]
 macro_rules! log_debug {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -323,6 +325,7 @@ macro_rules! log_debug {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_error! instead")]
 #[macro_export]
 macro_rules! log_error {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -333,6 +336,7 @@ macro_rules! log_error {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_trace! instead")]
 #[macro_export]
 macro_rules! log_trace {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -403,6 +407,7 @@ macro_rules! log_fn_json {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flush! instead")]
 #[macro_export]
 macro_rules! flushing_log_info {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -413,6 +418,7 @@ macro_rules! flushing_log_info {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flush! instead")]
 #[macro_export]
 macro_rules! flushing_log_debug {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -423,6 +429,7 @@ macro_rules! flushing_log_debug {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flush! instead")]
 #[macro_export]
 macro_rules! flushing_log_error {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
@@ -433,6 +440,7 @@ macro_rules! flushing_log_error {
     }};
 }
 
+#[deprecated(since = "0.2.0", note = "Use flashlog::flush! instead")]
 #[macro_export]
 macro_rules! flushing_log_trace {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
