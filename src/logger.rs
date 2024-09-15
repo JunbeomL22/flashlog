@@ -23,8 +23,7 @@ static LOG_MESSAGE_BUFFER_SIZE: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::ne
 static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(500_000_000));
 //2_000_000_000; // 2 second
 
-pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> =
-    Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
+pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
 pub static TIMEZONE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(TimeZone::Local as i32));
 pub static CONSOLE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 pub static FILE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
@@ -42,6 +41,8 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
 
     *LOGGER_HANDLER.lock().unwrap() = Some(thread::spawn(move || {
         let mut writer: Option<BufWriter<File>> = None;
+        let file_report = FILE_REPORT.load(Ordering::Relaxed);
+        let console_report = CONSOLE_REPORT.load(Ordering::Relaxed);
         while let Ok(msg) = receiver.recv() {
             match msg {
                 LogMessage::LazyMessage(lazy_message) => {
@@ -57,13 +58,13 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     {
                         let output = message_queue.join("");
 
-                        if FILE_REPORT.load(Ordering::Relaxed) {
+                        if file_report {
                             if let Some(ref mut writer) = writer {    
                                 writer.write_all(output.as_bytes()).unwrap();
                             }
                         }
                         
-                        if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                        if console_report {
                             println!("{}", output);
                         }
 
@@ -76,12 +77,12 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     message_queue.push(message);
 
                     let output = message_queue.join("");
-                    if FILE_REPORT.load(Ordering::Relaxed) {
+                    if file_report {
                         if let Some(ref mut writer) = writer {
                             writer.write_all(output.as_bytes()).unwrap();
                         }
                     }
-                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                    if console_report {
                         println!("{}", output);
                     }
 
@@ -97,13 +98,13 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         || (timestamp - last_flush_time > msg_flush_interval)
                     {
                         let output = message_queue.join("");
-                        if FILE_REPORT.load(Ordering::Relaxed) {
+                        if file_report {
                             if let Some(ref mut writer) = writer {
                                 writer.write_all(output.as_bytes()).unwrap();
                             }
                         }
 
-                        if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                        if console_report {
                             println!("{}", output);
                         }
                     }
@@ -133,14 +134,14 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                 }
                 LogMessage::Flush => {
                     let output = message_queue.join("");
-                    if FILE_REPORT.load(Ordering::Relaxed) {
+                    if file_report {
                         if let Some(ref mut writer) = writer {
                             writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().unwrap();
                             let _ = writer.get_mut().sync_all();
                         }
                     }
-                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                    if console_report {
                         println!("{}", output);
                     }
                     message_queue.clear();
@@ -156,14 +157,14 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                 }
                 LogMessage::Close => {
                     let output = message_queue.join("");
-                    if FILE_REPORT.load(Ordering::Relaxed) {
+                    if file_report {
                         if let Some(ref mut writer) = writer {
                             writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().unwrap();
                             let _ = writer.get_mut().sync_all();
                         }
                     }
-                    if CONSOLE_REPORT.load(Ordering::Relaxed) {
+                    if console_report {
                         println!("{}", output);
                     }
                     break;

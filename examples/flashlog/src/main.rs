@@ -23,12 +23,18 @@ impl Default for LogStruct {
     }
 }
 
+impl std::fmt::Display for LogStruct {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.data)
+    }
+}
+
 fn flashlog_array_80bytes() -> Result<()> {
-    let logger = Logger::initialize()
+    let _logger = Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
-        .with_msg_buffer_size(1000_000_000)
-        .with_msg_flush_interval(1000_000)
+        .with_msg_buffer_size(1_000_000_000)
+        .with_msg_flush_interval(1_000_000)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
         .launch();
@@ -48,9 +54,8 @@ fn flashlog_array_80bytes() -> Result<()> {
         let start = get_unix_nano();
         for _ in 0..iteration {
             let test_clone = log_struct.clone();
-            flash_info!("Bench"; log_struct = test_clone);
+            flash_info!(struct_info = test_clone);
         }    
-        flush!();
         let elapsed = get_unix_nano() - start;
         res_vec.push(elapsed);
     }
@@ -63,12 +68,12 @@ fn flashlog_array_80bytes() -> Result<()> {
 
     println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
 
-    drop(logger);
+    
     Ok(())
 }
 
 fn flashlog_i32() -> Result<()> {
-    let logger = Logger::initialize()
+    let _logger = Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
         .with_msg_buffer_size(1000_000_000)
@@ -91,12 +96,12 @@ fn flashlog_i32() -> Result<()> {
         flash_info!("Warm up");
         let start = get_unix_nano();
         for i in 0..iteration {
-            flash_info!("Log message"; log_int = i);
+            flash_info!(log_int = i);
         }    
-        flush!();
         let elapsed = get_unix_nano() - start;
         res_vec.push(elapsed);
     }
+    //flush!();
 
     let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
 
@@ -105,7 +110,7 @@ fn flashlog_i32() -> Result<()> {
     }
 
     println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
-    drop(logger);
+    
     Ok(())
 }
 
