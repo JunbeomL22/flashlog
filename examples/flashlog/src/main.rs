@@ -1,6 +1,5 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use flashlog::lazy_string::LazyString;
 
 use flashlog::{
     LogLevel, Logger, TimeZone,
@@ -34,7 +33,7 @@ fn flashlog_array_80bytes() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 5;
+    let iteration = 500_000;
     let test_number = 5;
     
     let log_struct = LogStruct::default();

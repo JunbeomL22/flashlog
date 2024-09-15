@@ -9,6 +9,7 @@
 //! ## Features
 //! 
 //! - **Lazy Evaluation**: Most evaluations are performed in the logger thread, resulting in exceptional performance.
+//! - **Lazy String**: String interpolation in `flash_xxx!` macros is inherently lazy.
 //! - **JSON Output**: Log messages are printed in `JSON` format for easy parsing and analysis.
 //! - **Customizable**: Flexible configuration options for file output, console reporting, buffer size, and more.
 //! - **Timezone Support**: Ability to set local or custom timezones for log timestamps.

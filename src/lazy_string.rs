@@ -2,15 +2,7 @@ use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 
-/// A lazy string that can be serialized and deserialized.
-/// All time consuming operations are deferred to the logger thread.
-/// # Example
-/// ```
-/// use flashlog::lazy_string::LazyString;
-/// 
-/// let lazy_string = LazyString::new(|| format!("{} {} {}", 1, 2, 3));
-/// flashlog::log_info!("LazyOne", message = lazy_string); // the interpolation is done in the logger thread
-/// ```
+#[deprecated(since = "0.2.0", note = "now the string interpolation in flash_xxx! macros is inherently lazy")]
 pub struct LazyString {
     cell: OnceCell<String>,
     initializer: Box<dyn Fn() -> String + Send + Sync>,
