@@ -10,7 +10,6 @@ A blazingly fast Rust logging library with lazy evaluation.
 
 - **Lazy Evaluation**: Most evaluations are performed in the logger thread, resulting in exceptional performance.
 - **JSON Output**: Log messages are printed in `JSON` format for easy parsing and analysis.
-- **LazyString**: Provides `LazyString` for optimized string interpolation.
 - **Customizable**: Flexible configuration options for file output, console reporting, buffer size, and more.
 - **Timezone Support**: Ability to set local or custom timezones for log timestamps.
 
