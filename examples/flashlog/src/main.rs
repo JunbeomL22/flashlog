@@ -34,7 +34,7 @@ fn flashlog_array_80bytes() -> Result<()> {
         .with_timezone(TimeZone::Local)
         .launch();
 
-    let iteration = 500_000;
+    let iteration = 5;
     let test_number = 5;
     
     let log_struct = LogStruct::default();
