@@ -1,6 +1,6 @@
 [package]
 name = "flashlog"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = ["Junbeom Lee <junbeoml22@gmail.com>"]
 description = "A fast logging library for Rust"
@@ -19,7 +19,7 @@ path = "src/lib.rs"
 
 [dependencies]
 quanta = "0.12"
-once_cell = "1.20"
+once_cell = "1.0"
 lazy_static = "1.4"
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing", "local-offset"] }
 anyhow = "1.0"
