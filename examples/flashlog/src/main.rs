@@ -9,7 +9,7 @@ use flashlog::{
     log_info,
     flushing_log_info,
     info,
-
+    RollingPeriod,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -33,7 +33,7 @@ fn flashlog_array_80bytes() -> Result<()> {
     let _logger = Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
-        .with_msg_buffer_size(1_000_000_000)
+        .with_msg_buffer_size(1_000)
         .with_msg_flush_interval(1_000_000)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
@@ -76,8 +76,8 @@ fn flashlog_i32() -> Result<()> {
     let _logger = Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
-        .with_msg_buffer_size(1000_000_000)
-        .with_msg_flush_interval(1000_000)
+        .with_msg_buffer_size(1000)
+        .with_msg_flush_interval(1_000_000)
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Local)
         .launch();
@@ -118,7 +118,7 @@ fn test_logger() -> Result<()> {
     let _logger = Logger::initialize()
         .with_file("logs", "message")? // without this the the logger dose not report a file
         .with_console_report(true) // true means it reports to console too
-        .with_msg_flush_interval(2_000_000_000) // flushing interval is 2 bil nano seconds = 2 seconds
+        .with_msg_flush_interval(1000) // flushing interval is 2 bil nano seconds = 2 seconds
         .with_msg_buffer_size(1_000_000) // but messages are flushed the 
         .with_max_log_level(LogLevel::Debug)
         .with_timezone(TimeZone::Local)

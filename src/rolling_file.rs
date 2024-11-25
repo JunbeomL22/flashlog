@@ -10,7 +10,7 @@ const HOUR_IN_NANOS: u64 = 3_600_000_000_000;
 const DAY_IN_NANOS: u64 = 86_400_000_000_000;
 const WEEK_IN_NANOS: u64 = 604_800_000_000_000;
 
-
+#[derive(Clone, Debug)]
 pub enum RollingPeriod {
     Secondly,
     Minutely,
@@ -19,8 +19,7 @@ pub enum RollingPeriod {
     Weekly,
 }
 
-const DEFAULT_MAX_ROLL_FILES: usize = 10;
-
+#[derive(Clone, Debug)]
 pub struct RollingConfig {
     pub base_path: PathBuf,
     pub file_name_prefix: String,
@@ -29,6 +28,18 @@ pub struct RollingConfig {
     pub max_roll_files: Option<usize>,
     // 
     pub compress: bool,
+}
+
+impl Default for RollingConfig {
+    fn default() -> Self {
+        Self {
+            base_path: PathBuf::from("./"),
+            file_name_prefix: "log".to_string(),
+            roll_period: None,
+            max_roll_files: None,
+            compress: false,
+        }
+    }
 }
 
 pub struct RollingFileWriter {
@@ -44,10 +55,10 @@ impl RollingFileWriter {
         let current_file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(&Self::generate_file_path(&config.base_path, &config.file_name_prefix))?;
+            .open(Self::generate_file_path(&config.base_path, &config.file_name_prefix))?;
 
         let last_roll_time = get_unix_nano();
-        let max_roll_files = config.max_roll_files.unwrap_or(DEFAULT_MAX_ROLL_FILES);
+        let max_roll_files = config.max_roll_files.unwrap_or(10);
         let rolling_nanos = match config.roll_period {
             Some(RollingPeriod::Secondly) => Some(SECOND_IN_NANOS),
             Some(RollingPeriod::Minutely) => Some(MINUATE_IN_NANOS),
@@ -72,7 +83,7 @@ impl RollingFileWriter {
         base_path.join(file_name)
     }
 
-    pub fn write(&mut self, data: &[u8]) -> io::Result<()> {
+    pub fn write_all(&mut self, data: &[u8]) -> io::Result<()> {
         if self.should_roll(None) {
             self.roll_file()?;
         }
@@ -81,6 +92,20 @@ impl RollingFileWriter {
             current_file.write_all(data)?;
         }
 
+        Ok(())
+    }
+
+    pub fn flush(&mut self) -> io::Result<()> {
+        if let Some(ref mut current_file) = self.current_file {
+            current_file.flush()?;
+        }
+        Ok(())
+    }
+
+    pub fn sync_all(&mut self) -> io::Result<()> {
+        if let Some(ref mut current_file) = self.current_file {
+            current_file.get_ref().sync_all()?;
+        }
         Ok(())
     }
 
@@ -142,7 +167,7 @@ impl RollingFileWriter {
             let path = entry.path();
             if path.is_file() {
                 if let Some(ext) = path.extension() {
-                    if ext == "log" || ext == "gz" {
+                    if ext == "log" {
                         if let Some(file_name) = path.file_name() {
                             if file_name.to_string_lossy().starts_with(&self.config.file_name_prefix) {
                                 files.push(path);
@@ -155,6 +180,26 @@ impl RollingFileWriter {
         Ok(files)
     }
 
+    fn collect_compressed_files(&self) -> io::Result<Vec<PathBuf>> {
+        let mut files = Vec::new();
+        for entry in std::fs::read_dir(&self.config.base_path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(ext) = path.extension() {
+                    if ext == "gz" {
+                        if let Some(file_name) = path.file_name() {
+                            if file_name.to_string_lossy().starts_with(&self.config.file_name_prefix) {
+                                files.push(path);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(files)
+    }
+    
     fn rotate_old_files(&self) -> io::Result<()> {
         let mut log_files = self.collect_log_files()?;
         log_files.sort_by(|a, b| b.cmp(a)); // Sort in reverse order
@@ -167,6 +212,16 @@ impl RollingFileWriter {
                 } else {
                     remove_file(oldest_file)?;
                 }
+            }
+        }
+
+        let mut gz_files = self.collect_compressed_files()?;
+        gz_files.sort_by(|a, b| b.cmp(a)); // Sort in reverse order
+
+        // Remove oldest files if we exceed max_roll_files
+        while gz_files.len() >= self.max_roll_files {
+            if let Some(oldest_file) = gz_files.pop() {
+                remove_file(oldest_file)?;
             }
         }
         

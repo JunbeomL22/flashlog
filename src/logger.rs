@@ -1,15 +1,17 @@
+use crate::flash_trace;
 use crate::timer::get_unix_nano;
+use crate::rolling_file::{
+    RollingFileWriter,
+    RollingConfig,
+    RollingPeriod,
+};
 //
-use anyhow::{anyhow, Result};
+//use anyhow::{anyhow, Ok, Result};
 use chrono;
 use core_affinity;
 use crossbeam_channel::{unbounded, Sender};
 use once_cell::sync::Lazy;
-use std::{
-    fs::{File, OpenOptions},
-    io::{BufWriter, Write},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 use std::{
     sync::{
         atomic::{AtomicBool, AtomicI32, AtomicUsize, Ordering, AtomicU64},
@@ -40,7 +42,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let mut last_flush_time = get_unix_nano();
 
     *LOGGER_HANDLER.lock().unwrap() = Some(thread::spawn(move || {
-        let mut writer: Option<BufWriter<File>> = None;
+        let mut rolling_writer: Option<RollingFileWriter> = None;
         let file_report = FILE_REPORT.load(Ordering::Relaxed);
         let console_report = CONSOLE_REPORT.load(Ordering::Relaxed);
         while let Ok(msg) = receiver.recv() {
@@ -59,7 +61,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         let output = message_queue.join("");
 
                         if file_report {
-                            if let Some(ref mut writer) = writer {    
+                            if let Some(ref mut writer) = rolling_writer {    
                                 writer.write_all(output.as_bytes()).unwrap();
                             }
                         }
@@ -78,7 +80,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
 
                     let output = message_queue.join("");
                     if file_report {
-                        if let Some(ref mut writer) = writer {
+                        if let Some(ref mut writer) = rolling_writer {
                             writer.write_all(output.as_bytes()).unwrap();
                         }
                     }
@@ -99,7 +101,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     {
                         let output = message_queue.join("");
                         if file_report {
-                            if let Some(ref mut writer) = writer {
+                            if let Some(ref mut writer) = rolling_writer {
                                 writer.write_all(output.as_bytes()).unwrap();
                             }
                         }
@@ -109,36 +111,22 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         }
                     }
                 }
-                LogMessage::SetFile(file_name) => {
-                    if let Some(ref mut writer) = writer {
+                LogMessage::SetFile(config) => {
+                    if let Some(ref mut writer) = rolling_writer {
                         writer.flush().unwrap();
-                        let _ = writer.get_mut().sync_all();
-                        *writer = OpenOptions::new()
-                            .create(true)
-                            .append(true)
-                            .open(file_name)
-                            .map(BufWriter::new)
-                            .unwrap();
+                        let _ = writer.sync_all();
                     } else {
-                        writer = Some(BufWriter::new(
-                            OpenOptions::new()
-                                .create(true)
-                                .append(true)
-                                .open(&file_name)
-                                .map_err(|e| {
-                                    anyhow!("Failed to open file: {} [{}]", file_name.display(), e)
-                                })
-                                .unwrap(),
-                        ));
+                        let writer = RollingFileWriter::new(config).expect("Failed to create RollingFileWriter");
+                        rolling_writer = Some(writer);
                     }
                 }
                 LogMessage::Flush => {
                     let output = message_queue.join("");
                     if file_report {
-                        if let Some(ref mut writer) = writer {
+                        if let Some(ref mut writer) = rolling_writer {
                             writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().unwrap();
-                            let _ = writer.get_mut().sync_all();
+                            let _ = writer.sync_all();
                         }
                     }
                     if console_report {
@@ -158,10 +146,10 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                 LogMessage::Close => {
                     let output = message_queue.join("");
                     if file_report {
-                        if let Some(ref mut writer) = writer {
+                        if let Some(ref mut writer) = rolling_writer {
                             writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().unwrap();
-                            let _ = writer.get_mut().sync_all();
+                            let _ = writer.sync_all();
                         }
                     }
                     if console_report {
@@ -219,7 +207,7 @@ impl LogLevel {
         }
     }
 
-    pub fn from_usize(level: usize) -> Result<LogLevel> {
+    pub fn from_usize(level: usize) -> Result<LogLevel, &'static str> {
         match level {
             0 => Ok(LogLevel::NIL),
             1 => Ok(LogLevel::Error),
@@ -228,8 +216,7 @@ impl LogLevel {
             4 => Ok(LogLevel::Debug),
             5 => Ok(LogLevel::Trace),
             _ => {
-                let error = || anyhow!("Invalid log level: {}", level);
-                Err(error())
+                Err("Invalid log level")
             }
         }
     }
@@ -516,14 +503,30 @@ pub struct LoggerGuard;
 
 impl Drop for LoggerGuard {
     fn drop(&mut self) {
-        log_trace!("logger", message = "LoggerGuard is dropped");
+        flash_trace!("LoggerGuard"; "LoggerGuard is dropped");
         Logger::finalize();
     }
 }
 
 pub struct Logger {
-    file_name: Option<String>,
+    file_config: Option<RollingConfig>,
 }
+
+
+#[derive(Debug)]
+pub enum LoggerError {
+    UnsetFile,
+}
+
+impl std::fmt::Display for LoggerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            LoggerError::UnsetFile => write!(f, "File config is not set. Use with_file first"),
+        }
+    }
+}
+
+impl std::error::Error for LoggerError {}
 
 impl Logger {
     pub fn finalize() {
@@ -537,24 +540,51 @@ impl Logger {
         let _ = get_unix_nano();
         LOG_MESSAGE_BUFFER_SIZE.store(1_000_000, Ordering::Relaxed);
         LOG_MESSAGE_FLUSH_INTERVAL.store(1_000_000, Ordering::Relaxed);
-        Logger { file_name: None }
+        Logger { file_config: None }
     }
 
-    pub fn with_file(mut self, file_path: &str, file_name: &str) -> Result<Logger> {
+    pub fn with_file(mut self, file_path: &str, file_name: &str) -> Result<Logger, std::io::Error> {
         std::fs::create_dir_all(file_path)?;
 
-        let current_time = chrono::Local::now();
-        let file_name = format!(
-            "{}/{}-{}.log",
-            file_path,
-            file_name,
-            current_time.format("%Y%m%d-%H%M%S")
-        );
-        self.file_name = Some(file_name);
+        let config = RollingConfig {
+            base_path: PathBuf::from(file_path),
+            file_name_prefix: file_name.to_string(),
+            roll_period: Some(RollingPeriod::Daily),
+            max_roll_files: Some(10),
+            compress: false,
+        };
 
+        self.file_config = Some(config);
         FILE_REPORT.store(true, Ordering::SeqCst);
 
         Ok(self)
+    }
+
+    pub fn with_compress(mut self, compress: bool) -> Result<Logger, LoggerError> {
+        if let Some(ref mut config) = self.file_config {
+            config.compress = compress;
+            Ok(self)
+        } else {
+            Err(LoggerError::UnsetFile)
+        }
+    }
+
+    pub fn with_roll_period(mut self, period: RollingPeriod) -> Result<Logger, LoggerError> {
+        if let Some(ref mut config) = self.file_config {
+            config.roll_period = Some(period);
+            Ok(self)
+        } else {
+            Err(LoggerError::UnsetFile)
+        }
+    }
+
+    pub fn with_max_roll_files(mut self, max_roll_files: usize) -> Result<Logger, LoggerError> {
+        if let Some(ref mut config) = self.file_config {
+            config.max_roll_files = Some(max_roll_files);
+            Ok(self)
+        } else {
+            Err(LoggerError::UnsetFile)
+        }
     }
 
     pub fn with_console_report(self, console_report: bool) -> Logger {
@@ -583,10 +613,10 @@ impl Logger {
     }
 
     pub fn launch(self) -> LoggerGuard {
-        let file_name = self.file_name.clone();
+        let rolling_config = self.file_config.clone();
         let _ = LOG_SENDER.send(LogMessage::SetCore);
-        if let Some(file_name) = file_name {
-            let _ = LOG_SENDER.send(LogMessage::SetFile(PathBuf::from(file_name)));
+        if let Some(config) = rolling_config {
+            let _ = LOG_SENDER.send(LogMessage::SetFile(config));
         }
         LoggerGuard {}
     }
@@ -596,7 +626,7 @@ pub enum LogMessage {
     LazyMessage(LazyMessage),
     FlushingMessage(LazyMessage),
     StaticString(&'static str),
-    SetFile(PathBuf),
+    SetFile(RollingConfig),
     Flush,
     SetCore,
     Close,
@@ -624,6 +654,7 @@ impl LazyMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
 
     #[test]
     fn test_logger() -> Result<()> {

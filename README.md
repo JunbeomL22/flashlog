@@ -98,9 +98,12 @@ impl std::fmt::Display for Hello {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _logger = Logger::initialize()
         .with_file("logs", "message")?               // Log to a file called "message" in the "logs" directory
+        .with_roll_period(RollingPeriod::Daily)?     // Log file is rolled in daily basis
+        .with_max_roll_files(10)?                    // Ten old file will remain. if compress is true, there will remain 10 gz file (older log) as well 
+        .with_compress(false)?                       // compress old log file
         .with_console_report(true)                   // Enable logging to the console
         .with_msg_flush_interval(2_000_000_000)      // Flush every 2 seconds
-        .with_msg_buffer_size(1_000_000)             // Flush when the message buffer exceeds 1 million characters
+        .with_msg_buffer_size(10)                    // Flush when there are 10 more log messages
         .with_max_log_level(LogLevel::Debug)         // Set the maximum log level to Debug
         .with_timezone(TimeZone::Local)              // Use local timezone for timestamps
         .launch();

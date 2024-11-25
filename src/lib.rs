@@ -28,7 +28,7 @@
 //! Topic and message are optional and separated by a semicolon. In addition, messages can be added with key-value pairs.
 //! 
 //! ```rust
-//! use flashlog::{flash_info, flash_debug, flush, Logger, LogLevel, TimeZone};
+//! use flashlog::{flash_info, flash_debug, flush, Logger, LogLevel, TimeZone, RollingPeriod};
 //! 
 //! pub enum Hello {
 //!    FlashLog,
@@ -46,9 +46,12 @@
 //! fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     let _logger = Logger::initialize()
 //!         .with_file("logs", "message")? // without this the logger does not report a file
+//!         .with_roll_period(RollingPeriod::Daily)? // Log file is rolled in daily basis
+//!         .with_max_roll_files(10)? // Ten old file will remain. if compress is true, there will remain 10 gz file (older log) as well 
+//!         .with_compress(true)? // compress old log file
 //!         .with_console_report(true) // true means it reports to console too
 //!         .with_msg_flush_interval(2_000_000_000) // flushing interval is 2 billion nanoseconds = 2 seconds
-//!         .with_msg_buffer_size(1_000_000) // messages are flushed when the accumulated messages length are longer than 1 million
+//!         .with_msg_buffer_size(100) // messages are flushed when there are more than 100 messages
 //!         .with_max_log_level(LogLevel::Debug)
 //!         .with_timezone(TimeZone::Local)
 //!         .launch();
@@ -102,6 +105,11 @@ pub use crate::logger::{
     LOG_SENDER,
     TIMEZONE,
     MAX_LOG_LEVEL,
+};
+pub use rolling_file::{
+    RollingConfig,
+    RollingFileWriter,
+    RollingPeriod,
 };
 pub use serde_json;
 
