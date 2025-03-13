@@ -25,6 +25,9 @@ static LOG_MESSAGE_BUFFER_SIZE: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::ne
 static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(500_000_000));
 //2_000_000_000; // 2 second
 
+// src/logger.rs (add with the other static variables)
+
+pub static INCLUDE_UNIXNANO: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
 pub static TIMEZONE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(TimeZone::Local as i32));
 pub static CONSOLE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
@@ -171,6 +174,7 @@ pub enum TimeZone {
 }
 
 impl TimeZone {
+    #[inline]
     pub fn as_offset_hour(&self) -> i32 {
         match self {
             TimeZone::Local => {
@@ -196,6 +200,7 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
+    #[inline]
     pub fn as_usize(&self) -> usize {
         match self {
             LogLevel::NIL => 0,
@@ -207,6 +212,7 @@ impl LogLevel {
         }
     }
 
+    #[inline]
     pub fn from_usize(level: usize) -> Result<LogLevel, &'static str> {
         match level {
             0 => Ok(LogLevel::NIL),
@@ -444,7 +450,8 @@ macro_rules! flushing_log_fn_json {
     ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
         let max_log_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= max_log_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
@@ -452,17 +459,28 @@ macro_rules! flushing_log_fn_json {
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "data": json_obj,
-                });
-
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "unixnano": unixnano,
+                    }),
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                    }),
+                };
                 json_msg.to_string() + "\n"
             };
 
@@ -474,26 +492,42 @@ macro_rules! flushing_log_fn_json {
     ($level:expr, $topic:expr, $struct:expr) => {{
         let current_level = $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let json_obj = $crate::serde_json::to_value($struct).unwrap_or_else(|e| {
                     $crate::serde_json::json!({ "error": format!("serialization error: {}", e) })
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
                 let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "data": json_obj,
-                });
-
-                json_msg.to_string() + "\n"
+                match include_unixnano {
+                    true => {
+                        let json_msg = $crate::serde_json::json!({
+                            "date": date,
+                            "time": time,
+                            "offset": timezone,
+                            "level": $level.to_string(),
+                            "src": format!("{}:{}", file!(), line!()),
+                            "topic": $topic,
+                            "data": json_obj,
+                            "unixnano": unixnano,
+                        });
+                        json_msg.to_string() + "\n"
+                    }
+                    false => {
+                        let json_msg = $crate::serde_json::json!({
+                            "date": date,
+                            "time": time,
+                            "offset": timezone,
+                            "level": $level.to_string(),
+                            "src": format!("{}:{}", file!(), line!()),
+                            "topic": $topic,
+                            "data": json_obj,
+                        });
+                        json_msg.to_string() + "\n"
+                    }
+                }
             };
-
             $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
@@ -576,6 +610,11 @@ impl Logger {
         } else {
             Err(LoggerError::UnsetFile)
         }
+    }
+
+    pub fn include_unixnano(self, include: bool) -> Logger {
+        INCLUDE_UNIXNANO.store(include, Ordering::Relaxed);
+        self
     }
 
     pub fn with_max_roll_files(mut self, max_roll_files: usize) -> Result<Logger, LoggerError> {

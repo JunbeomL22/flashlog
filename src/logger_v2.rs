@@ -114,7 +114,8 @@ macro_rules! log_fn_json_v2 {
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),*; $($key:ident = $value:expr),+ $(,)?) => {{
         let current_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
@@ -122,17 +123,31 @@ macro_rules! log_fn_json_v2 {
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "data": json_obj,
-                    "message": format!($fmt, $($arg),*),
-                });
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": format!($fmt, $($arg),*),
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": format!($fmt, $($arg),*),
+                        "unixnano": unixnano,
+                    }),
+                };
 
                 json_msg.to_string() + "\n"
             };
@@ -145,7 +160,8 @@ macro_rules! log_fn_json_v2 {
     ($level:expr, $topic:expr; $msg:expr; $($key:ident = $value:expr),+ $(,)?) => {{
         let current_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
@@ -153,17 +169,30 @@ macro_rules! log_fn_json_v2 {
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "data": json_obj,
-                    "message": $msg,
-                });
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": $msg,
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": $msg,
+                        "unixnano": unixnano,
+                    }),
+                };
 
                 json_msg.to_string() + "\n"
             };
@@ -176,24 +205,36 @@ macro_rules! log_fn_json_v2 {
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),* $(,)?) => {{
         let current_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "message": format!($fmt, $($arg),*),
-                    "data": "",
-                });
-
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "message": format!($fmt, $($arg),*),
+                        "data": "",
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "message": format!($fmt, $($arg),*),
+                        "data": "",
+                        "unixnano": unixnano,
+                    }),
+                };
                 json_msg.to_string() + "\n"
             };
-
             $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
@@ -202,19 +243,32 @@ macro_rules! log_fn_json_v2 {
     ($level:expr, $topic:expr; $msg:expr $(,)?) => {{
         let current_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic.to_string(),
-                    "message": $msg
-                });
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic.to_string(),
+                        "message": $msg
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic.to_string(),
+                        "message": $msg,
+                        "unixnano": unixnano,
+                    }),
+                };
 
                 json_msg.to_string() + "\n"
             };
@@ -227,7 +281,8 @@ macro_rules! log_fn_json_v2 {
     ($level:expr, $key:ident = $value:expr) => {{
         let current_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
@@ -236,17 +291,29 @@ macro_rules! log_fn_json_v2 {
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
                 let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": "",
-                    "data": json_obj,
-                    "message": "",
-                });
-
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": "",
+                        "data": json_obj,
+                        "message": "",
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": "",
+                        "data": json_obj,
+                        "message": "",
+                        "unixnano": unixnano,
+                    }),
+                };
                 json_msg.to_string() + "\n"
             };
 
@@ -258,7 +325,8 @@ macro_rules! log_fn_json_v2 {
     ($level:expr, $($key:ident = $value:expr),+ $(,)?) => {{
         let current_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
@@ -267,17 +335,29 @@ macro_rules! log_fn_json_v2 {
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
                 let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "data": json_obj,
-                    "topic": "",
-                    "message": "",
-                });
-
+                let json_msg = match unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "data": json_obj,
+                        "topic": "",
+                        "message": "",
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "data": json_obj,
+                        "topic": "",
+                        "message": "",
+                        "unixnano": unixnano,
+                    }),
+                };
                 json_msg.to_string() + "\n"
             };
 
@@ -285,7 +365,6 @@ macro_rules! log_fn_json_v2 {
         }
     }};
 }
-
 
 #[cfg(test)]
 mod tests {

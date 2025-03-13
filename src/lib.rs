@@ -90,6 +90,7 @@ pub mod lazy_string;
 pub mod logger_v2;
 pub mod logger;
 pub mod rolling_file;
+pub mod compile_time;
 
 pub use crate::timer::{
     get_unix_nano,
