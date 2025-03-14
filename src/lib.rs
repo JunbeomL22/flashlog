@@ -20,7 +20,7 @@
 //! 
 //! ```toml
 //! [dependencies]
-//! flashlog = "0.2"
+//! flashlog = "0.3"
 //! ```
 //! 
 //! Basic usage example:
@@ -54,6 +54,8 @@
 //!         .with_msg_buffer_size(100) // messages are flushed when there are more than 100 messages
 //!         .with_max_log_level(LogLevel::Debug)
 //!         .with_timezone(TimeZone::Local)
+//!         .include_unixnano(true) // include unixnano (u64) in the log as well as date and time
+//!         .with_logger_core(1) // core for logger affinity
 //!         .launch();
 //! 
 //!     flash_info!(Hello::FlashLog);
@@ -86,11 +88,9 @@
 
 
 pub mod timer;
-pub mod lazy_string;
 pub mod logger_v2;
 pub mod logger;
 pub mod rolling_file;
-pub mod compile_time;
 
 pub use crate::timer::{
     get_unix_nano,

@@ -25,15 +25,13 @@ static LOG_MESSAGE_BUFFER_SIZE: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::ne
 static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(500_000_000));
 //2_000_000_000; // 2 second
 
-// src/logger.rs (add with the other static variables)
-
 pub static INCLUDE_UNIXNANO: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 pub static MAX_LOG_LEVEL: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(LogLevel::NIL.as_usize()));
 pub static TIMEZONE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(TimeZone::Local as i32));
 pub static CONSOLE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 pub static FILE_REPORT: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
-pub static LOGGER_HANDLER: Lazy<Mutex<Option<thread::JoinHandle<()>>>> =
-    Lazy::new(|| Mutex::new(None));
+pub static LOGGER_HANDLER: Lazy<Mutex<Option<thread::JoinHandle<()>>>> =Lazy::new(|| Mutex::new(None));
+pub static LOGGER_CORE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(-1)); // -1 means that setting affinity to any remaining core
 
 pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let (sender, receiver) = unbounded();
@@ -41,7 +39,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let mut message_queue: Vec<String> = Vec::with_capacity(LOG_MESSAGE_BUFFER_SIZE.load(Ordering::SeqCst));
     let msg_buffer_size = LOG_MESSAGE_BUFFER_SIZE.load(Ordering::SeqCst);
     let msg_flush_interval = LOG_MESSAGE_FLUSH_INTERVAL.load(Ordering::SeqCst);
-
+    let affinity_core = LOGGER_CORE.load(Ordering::SeqCst);
     let mut last_flush_time = get_unix_nano();
 
     *LOGGER_HANDLER.lock().unwrap() = Some(thread::spawn(move || {
@@ -139,11 +137,20 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     last_flush_time = get_unix_nano();
                 }
                 LogMessage::SetCore => {
-                    let core_ids = core_affinity::get_core_ids().unwrap();
-                    if let Some(last_core_id) = core_ids.first() {
-                        core_affinity::set_for_current(*last_core_id);
+                    let available_core_ids = core_affinity::get_core_ids().unwrap();
+                    let core_id = if affinity_core == -1 {
+                        available_core_ids.first().cloned()
                     } else {
-                        panic!("No core available for logger thread")
+                        let core_id = core_affinity::CoreId { id: affinity_core as usize };
+                        if available_core_ids.contains(&core_id) {
+                            Some(core_id)
+                        } else {
+                            available_core_ids.first().cloned()
+                        }
+                    };
+
+                    if let Some(core_id) = core_id {
+                        core_affinity::set_for_current(core_id);
                     }
                 }
                 LogMessage::Close => {
@@ -241,21 +248,47 @@ impl std::fmt::Display for LogLevel {
     }
 }
 
-#[deprecated(since = "0.2.0", note = "Use flashlog::flash_error! instead")]
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_trace! instead")]
 #[macro_export]
-macro_rules! error {
+macro_rules! trace {
     ($($arg:tt)*) => {{
-        let msg = format!($($arg)*);
-        $crate::log_fn_json!($crate::LogLevel::Error, "not given", text = msg);
+        #[cfg(all(
+            debug_assertions,
+            any(feature = "max_level_trace")
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Trace, "not given", text = format!($($arg)*));
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(feature = "release_max_level_trace")
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Trace, "not given", text = format!($($arg)*));
+        
     }};
 }
 
-#[deprecated(since = "0.2.0", note = "Use flashlog::flash_warn! instead")]
+
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_debug! instead")]
 #[macro_export]
-macro_rules! warn {
+macro_rules! debug {
     ($($arg:tt)*) => {{
-        let msg = format!($($arg)*);
-        $crate::log_fn_json!($crate::LogLevel::Warn, "not given", text = msg);
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Debug, "not given", text = format!($($arg)*));
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Debug, "not given", text = format!($($arg)*));
     }};
 }
 
@@ -263,48 +296,124 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {{
-        let msg = format!($($arg)*);
-        $crate::log_fn_json!($crate::LogLevel::Info, "not given", text = msg);
-    }};
-}
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Info, "not given", text = format!($($arg)*));
 
-#[deprecated(since = "0.2.0", note = "Use flashlog::flash_debug! instead")]
-#[macro_export]
-macro_rules! debug {
-    ($($arg:tt)*) => {{
-        let msg = format!($($arg)*);
-        $crate::log_fn_json!($crate::LogLevel::Debug, "not given", text = msg);
-    }};
-}
-
-#[deprecated(since = "0.2.0", note = "Use flashlog::flash_trace! instead")]
-#[macro_export]
-macro_rules! trace {
-    ($($arg:tt)*) => {{
-        let msg = format!($($arg)*);
-        $crate::log_fn_json!($crate::LogLevel::Trace, "not given", text = msg);
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Info, "not given", text = format!($($arg)*));
     }};
 }
 
 #[deprecated(since = "0.2.0", note = "Use flashlog::flash_warn! instead")]
 #[macro_export]
-macro_rules! log_warn {
-    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $($key=$value),+);
-    }};
-    ($topic:expr, $struct:expr) => {{
-        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $struct);
+macro_rules! warn {
+    ($($arg:tt)*) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Warn, "not given", text = format!($($arg)*) );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Warn, "not given", text = format!($($arg)*));
     }};
 }
- 
-#[deprecated(since = "0.2.0", note = "Use flashlog::flash_info! instead")]
+
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_error! instead")]
 #[macro_export]
-macro_rules! log_info {
-    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $($key=$value),+);
+macro_rules! error {
+    ($($arg:tt)*) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_error",
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Error, "not given", text = format!($($arg)*));
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_error",
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Error, "not given", text = format!($($arg)*));
     }};
+}
+
+//---------
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_trace! instead")]
+#[macro_export]
+macro_rules! log_trace {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);
+    }};
+
     ($topic:expr, $struct:expr) => {{
-        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $struct);
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $struct);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $struct);
     }};
 }
 
@@ -312,32 +421,197 @@ macro_rules! log_info {
 #[macro_export]
 macro_rules! log_debug {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $($key=$value),+);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
         $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $($key=$value),+);
     }};
     ($topic:expr, $struct:expr) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $struct);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
         $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $struct);
     }};
 }
+
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_info! instead")]
+#[macro_export]
+macro_rules! log_info {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $($key=$value),+);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $struct);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $struct);
+    }};
+}
+
+
+#[deprecated(since = "0.2.0", note = "Use flashlog::flash_warn! instead")]
+#[macro_export]
+macro_rules! log_warn {
+    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $($key=$value),+);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $($key=$value),+);
+    }};
+    ($topic:expr, $struct:expr) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $struct);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $struct);
+    }};
+}
+
 
 #[deprecated(since = "0.2.0", note = "Use flashlog::flash_error! instead")]
 #[macro_export]
 macro_rules! log_error {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_error",
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Error, $topic, $($key=$value),+);
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_error",
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
         $crate::log_fn_json!($crate::LogLevel::Error, $topic, $($key=$value),+);
     }};
     ($topic:expr, $struct:expr) => {{
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_error",
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace"
+            )
+        ))]
         $crate::log_fn_json!($crate::LogLevel::Error, $topic, $struct);
-    }};
-}
 
-#[deprecated(since = "0.2.0", note = "Use flashlog::flash_trace! instead")]
-#[macro_export]
-macro_rules! log_trace {
-    ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);
-    }};
-    ($topic:expr, $struct:expr) => {{
-        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $struct);
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_error",
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace"
+            )
+        ))]
+        $crate::log_fn_json!($crate::LogLevel::Error, $topic, $struct);
     }};
 }
 
@@ -346,24 +620,43 @@ macro_rules! log_fn_json {
     ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
         let max_log_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= max_log_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+            //
+            
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
-                        stringify!($key): $value,
+                        stringify!($key): $key,
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "data": json_obj,
-                });
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "unixnano": unixnano,
+                    }),
+                };
 
                 json_msg.to_string() + "\n"
             };
@@ -376,22 +669,37 @@ macro_rules! log_fn_json {
     ($level:expr, $topic:expr, $struct:expr) => {{
         let current_level = $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
         if $level <= current_level {
-            let timestamp = $crate::get_unix_nano();
+            let unixnano = $crate::get_unix_nano();
+            let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+            #[allow(non_snake_case)]
+            let struct_clone = $struct.clone();
             let func = move || {
-                let json_obj = $crate::serde_json::to_value($struct).unwrap_or_else(|e| {
+                let json_obj = $crate::serde_json::to_value(struct_clone).unwrap_or_else(|e| {
                     $crate::serde_json::json!({ "error": format!("serialization error: {}", e) })
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                let (date, time) = $crate::convert_unix_nano_to_date_and_time(timestamp, timezone);
-                let json_msg = $crate::serde_json::json!({
-                    "date": date,
-                    "time": time,
-                    "offset": timezone,
-                    "level": $level.to_string(),
-                    "src": format!("{}:{}", file!(), line!()),
-                    "topic": $topic,
-                    "data": json_obj,
-                });
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $level.to_string(),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "unixnano": unixnano,
+                    }),
+                };
 
                 json_msg.to_string() + "\n"
             };
@@ -603,6 +911,11 @@ impl Logger {
         }
     }
 
+    pub fn with_logger_core(self, core: i32) -> Logger {
+        LOGGER_CORE.store(core, Ordering::SeqCst);
+        self
+    }
+
     pub fn with_roll_period(mut self, period: RollingPeriod) -> Result<Logger, LoggerError> {
         if let Some(ref mut config) = self.file_config {
             config.roll_period = Some(period);
@@ -687,56 +1000,5 @@ impl LazyMessage {
 
     pub fn eval(self) -> String {
         (self.data)()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use anyhow::Result;
-
-    #[test]
-    fn test_logger() -> Result<()> {
-        let _guard = Logger::initialize()
-            //.with_file("logs", "test")?
-            .with_console_report(true)
-            .with_max_log_level(LogLevel::Info)
-            //.with_timezone(TimeZone::Local)
-            .launch();
-
-        info!("warm up");
-        info!("warm up");
-        info!("warm up");
-
-        let iteration = 100;
-
-        let start = crate::get_unix_nano();
-
-        for _ in 0..iteration {
-            //let test_clone = test_struct.clone();
-            info!("test");
-        }
-
-        let end = crate::get_unix_nano();
-
-        let elapsed = end - start;
-        let elapsed_as_seconds = elapsed as f64 / 1_000_000_000.0;
-        let elapsed_average = elapsed as f64 / iteration as f64;
-
-        let message = format!(
-            "elapsed: {}s, average: {}ns",
-            elapsed_as_seconds, elapsed_average,
-        );
-
-        flushing_log_info!(
-            "TestDone",
-            message = message,  
-        );
-
-        println!("elapsed: {}s, average: {}ns", elapsed_as_seconds, elapsed_average);
-
-        assert!(true);
-        drop(_guard);
-        Ok(())
     }
 }

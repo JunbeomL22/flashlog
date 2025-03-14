@@ -189,7 +189,7 @@ Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8,
 
 | Logger    | i32           | 80 byte struct  |
 | --------- | ------------- | --------------- |
-| flashlog  | 80 ns         | 90 ns           |
+| flashlog  | 80 ns         | 105 ns          |
 | ftlog     | 323 ns        | 581 ns          |
 | fast_log  | 500 ns        | 500 ns          |
 | slog      | 324 ns        | 604 ns          |

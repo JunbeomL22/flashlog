@@ -9,8 +9,12 @@ arr = []
 i32 = []
 test = []
 
-
 [dependencies]
-flashlog = { version = "0.2", path = "../../" }
+flashlog = { version = "0.3", path = "../../", default-features = false, features = ["max_level_info", "release_max_level_info"] }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3

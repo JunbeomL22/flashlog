@@ -8,11 +8,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/JunbeomL22/flashlog"
 keywords = ["Logging", "Fast", "Lazy"]
 
-[[bench]]
-name = "lazy_string"
-harness = false
-
-
 [lib]
 name = "flashlog"
 path = "src/lib.rs"
@@ -39,27 +34,20 @@ criterion = "0.5"
 [profile.release]
 opt-level = 3
 
-members = [
-    "flashlog",
-    "examples/*"
-]
+[workspace]
+members = ["examples/*"]
 
 [features]
-# Default max level when not specified
-default = []
+default = ["max_level_trace", "release_max_level_info"]
 
-# Regular compile-time level filters (apply in all build profiles)
-max_level_off = []
 max_level_error = []
-max_level_warn = []
-max_level_info = []
-max_level_debug = []
-max_level_trace = []
+max_level_warn = ["max_level_error"]
+max_level_info = ["max_level_warn"]
+max_level_debug = ["max_level_info"]
+max_level_trace = ["max_level_debug"]
 
-# Release-specific compile-time level filters (only apply in release builds)
-release_max_level_off = []
 release_max_level_error = []
-release_max_level_warn = []
-release_max_level_info = []
-release_max_level_debug = []
-release_max_level_trace = []
+release_max_level_warn = ["release_max_level_error"]
+release_max_level_info = ["release_max_level_warn"]
+release_max_level_debug = ["release_max_level_info"]
+release_max_level_trace = ["release_max_level_debug"]

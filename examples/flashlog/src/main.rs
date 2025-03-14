@@ -1,17 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use flashlog::{
-    LogLevel, Logger, TimeZone,
-    get_unix_nano,
-    flush,
-    flash_info,
-    log_info,
-    flushing_log_info,
-    info,
-    RollingPeriod,
-};
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogStruct {
     data: [u64; 10],
@@ -30,17 +19,19 @@ impl std::fmt::Display for LogStruct {
 }
 
 fn flashlog_array_80bytes() -> Result<()> {
-    let _logger = Logger::initialize()
+    let _logger = flashlog::Logger::initialize()
         .with_file("logs", "message")?
-        .with_console_report(false)
-        .with_msg_buffer_size(1_000)
-        .with_msg_flush_interval(1_000_000)
-        .with_max_log_level(LogLevel::Info)
-        .with_timezone(TimeZone::Local)
+        // .with_console_report(true)
+        .with_msg_buffer_size(500)
+        .with_msg_flush_interval(500_000_000)
+        .with_max_log_level(flashlog::LogLevel::Info)
+        .with_timezone(flashlog::TimeZone::Local)
+        .with_logger_core(0)
+        .include_unixnano(true)
         .launch();
 
     let iteration = 500_000;
-    let test_number = 5;
+    let test_number = 1;
     
     let log_struct = LogStruct::default();
     let mut res_vec = Vec::new();
@@ -49,16 +40,17 @@ fn flashlog_array_80bytes() -> Result<()> {
     println!("Iteration: {}, Test number: {}", iteration, test_number);
     println!("At each test, sleep for 2 seconds and log warm up msg");
     for _ in 0..test_number {
-        std::thread::sleep(std::time::Duration::from_secs(2));
-        flash_info!("Warm up");
-        let start = get_unix_nano();
+        //std::thread::sleep(std::time::Duration::from_secs(2));
+        flashlog::flash_info!("Warm up");
+        let start = flashlog::get_unix_nano();
         for _ in 0..iteration {
-            let test_clone = log_struct.clone();
-            flash_info!(struct_info = test_clone);
+            flashlog::flash_info!(LogStruct = log_struct);
         }    
-        let elapsed = get_unix_nano() - start;
+        let elapsed = flashlog::get_unix_nano() - start;
         res_vec.push(elapsed);
     }
+
+    flashlog::flush!(); 
 
     let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
 
@@ -73,32 +65,33 @@ fn flashlog_array_80bytes() -> Result<()> {
 }
 
 fn flashlog_i32() -> Result<()> {
-    let _logger = Logger::initialize()
+    let _logger = flashlog::Logger::initialize()
         .with_file("logs", "message")?
         .with_console_report(false)
-        .with_msg_buffer_size(1000)
-        .with_msg_flush_interval(1_000_000)
-        .with_max_log_level(LogLevel::Info)
-        .with_timezone(TimeZone::Local)
+        .with_msg_buffer_size(100)
+        .with_msg_flush_interval(500_000_000)
+        .with_max_log_level(flashlog::LogLevel::Info)
+        .with_timezone(flashlog::TimeZone::Local)
+        .with_logger_core(1)
+        .include_unixnano(true)
         .launch();
 
     let iteration = 500_000;
     let test_number = 5;
     
-    let log_struct = LogStruct::default();
     let mut res_vec = Vec::new();
 
     println!("Start test: i32 ");
     println!("Iteration: {}, Test number: {}", iteration, test_number);
     println!("At each test, sleep for 2 seconds and log warm up msg");
     for _ in 0..test_number {
-        std::thread::sleep(std::time::Duration::from_secs(2));
-        flash_info!("Warm up");
-        let start = get_unix_nano();
+        std::thread::sleep(std::time::Duration::from_secs(1));
+        flashlog::flash_info!("Warm up");
+        let start = flashlog::get_unix_nano();
         for i in 0..iteration {
-            flash_info!(log_int = i);
+            flashlog::flash_info!(log_int = i);
         }    
-        let elapsed = get_unix_nano() - start;
+        let elapsed = flashlog::get_unix_nano() - start;
         res_vec.push(elapsed);
     }
     //flush!();
@@ -115,20 +108,20 @@ fn flashlog_i32() -> Result<()> {
 }
 
 fn test_logger() -> Result<()> {
-    let _logger = Logger::initialize()
+    let _logger = flashlog::Logger::initialize()
         .with_file("logs", "message")? // without this the the logger dose not report a file
         .with_console_report(true) // true means it reports to console too
         .with_msg_flush_interval(1000) // flushing interval is 2 bil nano seconds = 2 seconds
         .with_msg_buffer_size(1_000_000) // but messages are flushed the 
-        .with_max_log_level(LogLevel::Debug)
-        .with_timezone(TimeZone::Local)
+        .with_max_log_level(flashlog::LogLevel::Debug)
+        .with_timezone(flashlog::TimeZone::Local)
         .launch();
 
-    info!("Warm up"); // pushed in message queue but not reported, 
+    flashlog::info!("Warm up"); // pushed in message queue but not reported, 
     // this will be reported when another log comes in after 2 seconds (with_msg_flush_interval = 2_000_000_000)
-    flush!(); // without this the logger does not report any message 
+    flashlog::flush!(); // without this the logger does not report any message 
     // since the time and msg length conditions are not met
-    flushing_log_info!("Log message", data = "data"); // This logs and flushes together
+    flashlog::flushing_log_info!("Log message", data = "data"); // This logs and flushes together
     Ok(())
 }
 
@@ -144,30 +137,3 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-    
-/*
-fn main() -> Result<()> {
-    let logger = Logger::initialize()
-            // folder and file name
-            .with_file("logs", "message")?
-            .with_console_report(false)
-            // In the logger thread, the messages are filled in a buffer
-            // It flushes the messages where the length is more than 1,000,000
-            .with_msg_buffer_size(1_000_000)
-            // The messages are flushed if it has been passed 1,000,000 ns from the last flush
-            .with_msg_flush_interval(1_000_000)
-            .with_max_log_level(LogLevel::Info)
-            .with_timezone(TimeZone::Local)
-            .launch();
-
-    let log_struct = LogStruct::default();
-    info!("Warm up");
-    log_info!("Log message", log_struct = log_struct);
-
-    let lazy_msg = LazyString::new(|| format!("{} {} {}", 1, 2, 3));
-    log_info!("LazyOne", msg = lazy_msg);   
-    // this macro flushes message regardless of the options
-    flush!("flushing", data = "");
-
-    Ok(())
-} */

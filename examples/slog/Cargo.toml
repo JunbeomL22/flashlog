@@ -1,5 +1,5 @@
 [package]
-name = "example-ftlog"
+name = "example-slog"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -12,7 +12,7 @@ i32 = []
 [dependencies]
 anyhow = "1.0"
 log = "0.4"
-flashlog = { version = "0.1", path = "../../" }
+flashlog = { version = "0.3", path = "../../" }
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing", "local-offset"] }
 serde = { version = "1.0", features = ["derive"] }
 slog = "2.7"

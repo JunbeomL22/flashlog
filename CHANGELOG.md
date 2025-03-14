@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.3.0]
+ - in the log macro, the struct data is cloned. The cloning is done in the current thread and serialized in the logging thread.
+ - include_unixnano option added
+ - user can choose what core to choose for affinity (with_logger_core)
+ - compile time filter added
 
 ## [0.2.4]
  - rolling file function is added

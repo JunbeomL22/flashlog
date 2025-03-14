@@ -52,12 +52,32 @@ macro_rules! log_with_level {
 macro_rules! flash_trace {
     // Handle one or more key-value pairs without a topic
     ( $( $key:ident = $value:expr ),+ $(,)? ) => {
-        $crate::log_with_level!($crate::LogLevel::Trace, ""; $( $key = $value ),+ )
+        #[cfg(all(
+            debug_assertions,
+            any(feature = "max_level_trace")
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Trace, ""; $( $key = $value ),+ );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(feature = "release_max_level_trace")
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Trace, ""; $( $key = $value ),+ );
     };
 
     // Handle all other cases (e.g., with topic, message, etc.)
     ( $($args:tt)* ) => {
-        $crate::log_with_level!($crate::LogLevel::Trace, $($args)* )
+        #[cfg(all(
+            debug_assertions,
+            any(feature = "max_level_trace")
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Trace, $($args)* );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(feature = "release_max_level_trace")
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Trace, $($args)* );
     };
 }
 
@@ -65,10 +85,42 @@ macro_rules! flash_trace {
 macro_rules! flash_debug {
     // Handle one or more key-value pairs without a topic
     ( $( $key:ident = $value:expr ),+ $(,)? ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Debug, ""; $( $key = $value ),+ );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Debug, ""; $( $key = $value ),+ )
     };
     // Handle all other cases (e.g., with topic, message, etc.)
     ( $($args:tt)* ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Debug, $($args)* );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Debug, $($args)* )
     };
 }
@@ -76,10 +128,46 @@ macro_rules! flash_debug {
 macro_rules! flash_info {
     // Handle one or more key-value pairs without a topic
     ( $( $key:ident = $value:expr ),+ $(,)? ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Info, ""; $( $key = $value ),+ );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Info, ""; $( $key = $value ),+ )
     };
     // Handle all other cases (e.g., with topic, message, etc.)
     ( $($args:tt)* ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Info, $($args)* );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Info, $($args)* )
     };
 }
@@ -88,10 +176,50 @@ macro_rules! flash_info {
 macro_rules! flash_warn {
     // Handle one or more key-value pairs without a topic
     ( $( $key:ident = $value:expr ),+ $(,)? ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Warn, ""; $( $key = $value ),+ );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Warn, ""; $( $key = $value ),+ )
     };
     // Handle all other cases (e.g., with topic, message, etc.)
     ( $($args:tt)* ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Warn, $($args)* );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Warn, $($args)* )
     };
 }
@@ -100,10 +228,54 @@ macro_rules! flash_warn {
 macro_rules! flash_error {
     // Handle one or more key-value pairs without a topic
     ( $( $key:ident = $value:expr ),+ $(,)? ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_error",
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Error, ""; $( $key = $value ),+ );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_error",
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Error, ""; $( $key = $value ),+ )
     };
     // Handle all other cases (e.g., with topic, message, etc.)
     ( $($args:tt)* ) => {
+        #[cfg(all(
+            debug_assertions,
+            any(
+                feature = "max_level_error",
+                feature = "max_level_warn",
+                feature = "max_level_info",
+                feature = "max_level_debug",
+                feature = "max_level_trace",
+            )
+        ))]
+        $crate::log_with_level!($crate::LogLevel::Error, $($args)* );
+
+        #[cfg(all(
+            not(debug_assertions),
+            any(
+                feature = "release_max_level_error",
+                feature = "release_max_level_warn",
+                feature = "release_max_level_info",
+                feature = "release_max_level_debug",
+                feature = "release_max_level_trace",
+            )
+        ))]
         $crate::log_with_level!($crate::LogLevel::Error, $($args)* )
     };
 }
@@ -116,10 +288,14 @@ macro_rules! log_fn_json_v2 {
         if $level <= current_level {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )+
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
-                        stringify!($key): $value,
+                        stringify!($key): $key,
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
@@ -162,10 +338,15 @@ macro_rules! log_fn_json_v2 {
         if $level <= current_level {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+            
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
-                        stringify!($key): $value,
+                        stringify!($key): $key,
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
@@ -283,10 +464,14 @@ macro_rules! log_fn_json_v2 {
         if $level <= current_level {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
-                        stringify!($key): $value,
+                        stringify!($key): $key,
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
@@ -327,10 +512,14 @@ macro_rules! log_fn_json_v2 {
         if $level <= current_level {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
             let func = move || {
                 let json_obj = $crate::serde_json::json!({
                     $(
-                        stringify!($key): $value,
+                        stringify!($key): $key,
                     )+
                 });
                 let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
@@ -369,8 +558,11 @@ macro_rules! log_fn_json_v2 {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use serde::Serialize;
     use crate::{Logger, LogLevel};
     use crate::TimeZone;
+
+    #[derive(Debug, Clone, Serialize)]
     pub enum Hello {
         World,
         FlashLog,
@@ -385,15 +577,26 @@ mod tests {
         }
     }
 
+    #[derive(Debug, Serialize, Clone)]
+    pub struct TestStruct {
+        pub test: i32,
+    }
+
+    #[derive(Debug, Serialize, Clone)]
+    pub struct TestStruct2 {
+        pub test: i32,
+    }
+
     #[test]
     fn test_logger() -> Result<()> {
         let _guard = Logger::initialize()
-            //.with_file("logs", "test")?
+            //.with_file("logs", "message")?
             .with_console_report(true)
             .with_msg_buffer_size(1_000_000)
             .with_msg_flush_interval(1_000_000_000)
-            .with_max_log_level(LogLevel::Info)
+            .with_max_log_level(LogLevel::Trace)
             .with_timezone(TimeZone::Local)
+            .include_unixnano(false)
             .launch();
 
         flash_error!(Hello::FlashLog);
@@ -406,6 +609,11 @@ mod tests {
         flash_error!(version = "0.1.0", author = "John Doe");
         flash_error!("topic1"; "message {} {}", 1, 2);
         flash_error!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+        flash_error!("topic2"; "message {} {}", 1, 2; Hello = Hello::FlashLog);
+        let test_info = TestStruct { test: 1 };
+        let test_info2 = TestStruct2 { test: 2 };
+        flash_error!("topic2"; "message {} {}", 1, 2; TestStruct = test_info, TestStruct2 = test_info2);
+        println!("{:?}", test_info); // still alive
         flush!(); // this flushes regardless of the buffer size and flush interval
 
         flash_warn!(Hello::World);
@@ -417,6 +625,10 @@ mod tests {
         flash_warn!(version = "0.1.0", author = "John Doe");
         flash_warn!("topic1"; "message {} {}", 1, 2);
         flash_warn!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+        flash_warn!("topic2"; "message {} {}", 1, 2; Hello = Hello::FlashLog);
+        let test_info = TestStruct { test: 1 };
+        flash_warn!("topic2"; "message {} {}", 1, 2; TestStruct = test_info);
+        println!("{:?}", test_info);
 
         flush!(); // this flushes regardless of the buffer size and flush interval
 
@@ -430,6 +642,12 @@ mod tests {
         flash_info!(version = "0.1.0", author = "John Doe");
         flash_info!("topic1"; "message {} {}", 1, 2);
         flash_info!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+        flash_info!("topic2"; "message {} {}", 1, 2; Hello = Hello::FlashLog);
+        let test_info = TestStruct { test: 1 };
+        flash_info!("topic2"; "message {} {}", 1, 2; TestStruct = test_info);
+        println!("{:?}", test_info);
+
+        flush!(); // this flushes regardless of the buffer size and flush interval
 
         flash_debug!(Hello::World);
         flash_debug!("Hello");
@@ -440,6 +658,12 @@ mod tests {
         flash_debug!(version = "0.1.0", author = "John Doe");
         flash_debug!("topic1"; "message {} {}", 1, 2);
         flash_debug!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+        flash_debug!("topic2"; "message {} {}", 1, 2; Hello = Hello::FlashLog);
+        let test_info = TestStruct { test: 1 };
+        flash_debug!("topic2"; "message {} {}", 1, 2; TestStruct = test_info);
+        println!("{:?}", test_info);
+
+        flush!(); // this flushes regardless of the buffer size and flush interval
 
         flash_trace!(Hello::World);
         flash_trace!("Hello");
@@ -450,14 +674,15 @@ mod tests {
         flash_trace!(version = "0.1.0", author = "John Doe");
         flash_trace!("topic1"; "message {} {}", 1, 2);
         flash_trace!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
-
-
+        flash_trace!("topic2"; "message {} {}", 1, 2; Hello = Hello::FlashLog);
+        let test_info = TestStruct { test: 1 };
+        flash_trace!("topic2"; "message {} {}", 1, 2; TestStruct = test_info);
+        println!("{:?}", test_info);
 
         crate::flush!();
 
-
         assert!(true);
-        drop(_guard);
+
         Ok(())
     }
 }

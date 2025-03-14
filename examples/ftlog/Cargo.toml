@@ -13,6 +13,6 @@ i32 = []
 anyhow = "1.0"
 ftlog = "0.2"
 log = "0.4"
-flashlog = { version = "0.1", path = "../../" }
+flashlog = { version = "0.3", path = "../../" }
 time = { version = "0.3", features = ["macros", "serde", "formatting", "parsing", "local-offset"] }
 serde = { version = "1.0", features = ["derive"] }
