@@ -21,17 +21,17 @@ impl std::fmt::Display for LogStruct {
 fn flashlog_array_80bytes() -> Result<()> {
     let _logger = flashlog::Logger::initialize()
         .with_file("logs", "message")?
-        // .with_console_report(true)
+        .with_console_report(false)
         .with_msg_buffer_size(500)
         .with_msg_flush_interval(500_000_000)
-        .with_max_log_level(flashlog::LogLevel::Info)
+        .with_max_log_level(flashlog::LogLevel::Error)
         .with_timezone(flashlog::TimeZone::Local)
         .with_logger_core(0)
         .include_unixnano(true)
         .launch();
 
     let iteration = 500_000;
-    let test_number = 1;
+    let test_number = 5;
     
     let log_struct = LogStruct::default();
     let mut res_vec = Vec::new();
@@ -40,11 +40,24 @@ fn flashlog_array_80bytes() -> Result<()> {
     println!("Iteration: {}, Test number: {}", iteration, test_number);
     println!("At each test, sleep for 2 seconds and log warm up msg");
     for _ in 0..test_number {
-        //std::thread::sleep(std::time::Duration::from_secs(2));
+        std::thread::sleep(std::time::Duration::from_secs(2));
         flashlog::flash_info!("Warm up");
         let start = flashlog::get_unix_nano();
         for _ in 0..iteration {
+            flashlog::flash_error_ct!(LogStruct = log_struct);
+            flashlog::flash_warn_ct!(LogStruct = log_struct);
+            flashlog::flash_info_ct!(LogStruct = log_struct);
+            flashlog::flash_debug_ct!(LogStruct = log_struct);
+            flashlog::flash_trace_ct!(LogStruct = log_struct);
+            
+            /*
+            flashlog::flash_error!(LogStruct = log_struct);
+            flashlog::flash_warn!(LogStruct = log_struct);
             flashlog::flash_info!(LogStruct = log_struct);
+            flashlog::flash_debug!(LogStruct = log_struct);
+            flashlog::flash_trace!(LogStruct = log_struct);
+            */
+            
         }    
         let elapsed = flashlog::get_unix_nano() - start;
         res_vec.push(elapsed);
@@ -70,7 +83,7 @@ fn flashlog_i32() -> Result<()> {
         .with_console_report(false)
         .with_msg_buffer_size(100)
         .with_msg_flush_interval(500_000_000)
-        .with_max_log_level(flashlog::LogLevel::Info)
+        .with_max_log_level(flashlog::LogLevel::Error)
         .with_timezone(flashlog::TimeZone::Local)
         .with_logger_core(1)
         .include_unixnano(true)
@@ -89,8 +102,8 @@ fn flashlog_i32() -> Result<()> {
         flashlog::flash_info!("Warm up");
         let start = flashlog::get_unix_nano();
         for i in 0..iteration {
-            flashlog::flash_info!(log_int = i);
-        }    
+            flashlog::flash_error_ct!(log_int = i);
+        }
         let elapsed = flashlog::get_unix_nano() - start;
         res_vec.push(elapsed);
     }
@@ -109,19 +122,82 @@ fn flashlog_i32() -> Result<()> {
 
 fn test_logger() -> Result<()> {
     let _logger = flashlog::Logger::initialize()
-        .with_file("logs", "message")? // without this the the logger dose not report a file
-        .with_console_report(true) // true means it reports to console too
-        .with_msg_flush_interval(1000) // flushing interval is 2 bil nano seconds = 2 seconds
-        .with_msg_buffer_size(1_000_000) // but messages are flushed the 
-        .with_max_log_level(flashlog::LogLevel::Debug)
+        .with_file("logs", "message")?
+        .with_console_report(false)
+        .with_msg_buffer_size(100)
+        .with_msg_flush_interval(500_000_000)
+        .with_max_log_level(flashlog::LogLevel::Error)
         .with_timezone(flashlog::TimeZone::Local)
+        .with_logger_core(0)
+        .include_unixnano(true)
         .launch();
 
-    flashlog::info!("Warm up"); // pushed in message queue but not reported, 
-    // this will be reported when another log comes in after 2 seconds (with_msg_flush_interval = 2_000_000_000)
-    flashlog::flush!(); // without this the logger does not report any message 
-    // since the time and msg length conditions are not met
-    flashlog::flushing_log_info!("Log message", data = "data"); // This logs and flushes together
+    let iteration = 500_000;
+    let test_number = 5;
+    let log_struct = LogStruct::default();
+    let mut res_vec = Vec::new();
+
+    println!("Start test");
+    println!("Iteration: {}, Test number: {}", iteration, test_number);
+    println!("At each test, sleep for 3 seconds and log warm up msg");
+    for _ in 0..test_number {
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        flashlog::flash_info!("Warm up");
+        let start = flashlog::get_unix_nano();
+        for i in 0..iteration {
+            flashlog::flash_trace_ct!(LogStruct = log_struct);
+            flashlog::flash_debug_ct!(LogStruct = log_struct);
+            flashlog::flash_info_ct!(LogStruct = log_struct);
+            flashlog::flash_warn_ct!(LogStruct = log_struct);
+            flashlog::flash_error_ct!(LogStruct = log_struct);
+        }
+        let elapsed = flashlog::get_unix_nano() - start;
+        res_vec.push(elapsed);
+    }
+    //flush!();
+
+    let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
+
+    for (i, res) in ave_res.iter().enumerate() {
+        println!("Test number: {}, Elapsed time: {:.1} ns", i, res);
+    }
+
+    println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
+    //
+    //
+    let iteration = 500_000;
+    let test_number = 5;
+    
+    let mut res_vec = Vec::new();
+    let log_struct = LogStruct::default();
+    println!("Start test");
+    println!("Iteration: {}, Test number: {}", iteration, test_number);
+    println!("At each test, sleep for 3 seconds and log warm up msg");
+    for _ in 0..test_number {
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        flashlog::flash_info!("Warm up");
+        let start = flashlog::get_unix_nano();
+        for i in 0..iteration {
+            //let log_struct = LogStruct::default();
+            //flashlog::flash_error!(LogStruct = log_struct);
+            flashlog::flash_warn!("Hello");
+            //flashlog::flash_info!(LogStruct = log_struct);
+            //flashlog::flash_debug!(LogStruct = log_struct);
+            //flashlog::flash_trace!(LogStruct = log_struct);
+        }
+        let elapsed = flashlog::get_unix_nano() - start;
+        res_vec.push(elapsed);
+    }
+    //flush!();
+
+    let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
+
+    for (i, res) in ave_res.iter().enumerate() {
+        println!("Test number: {}, Elapsed time: {:.1} ns", i, res);
+    }
+
+    println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
+    
     Ok(())
 }
 

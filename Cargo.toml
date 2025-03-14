@@ -31,23 +31,13 @@ flate2 = "1.0"
 anyhow = "1.0"
 criterion = "0.5"
 
-[profile.release]
-opt-level = 3
-
-[workspace]
-members = ["examples/*"]
+#[workspace]
+#members = ["examples/*"]
 
 [features]
-default = ["max_level_trace", "release_max_level_info"]
-
-max_level_error = []
-max_level_warn = ["max_level_error"]
-max_level_info = ["max_level_warn"]
-max_level_debug = ["max_level_info"]
-max_level_trace = ["max_level_debug"]
-
-release_max_level_error = []
-release_max_level_warn = ["release_max_level_error"]
-release_max_level_info = ["release_max_level_warn"]
-release_max_level_debug = ["release_max_level_info"]
-release_max_level_trace = ["release_max_level_debug"]
+max-level-off = []
+max-level-error = ["max-level-off"]
+max-level-warn = ["max-level-error"]
+max-level-info = ["max-level-warn"]
+max-level-debug = ["max-level-info"]
+max-level-trace = ["max-level-debug"]

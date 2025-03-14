@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - include_unixnano option added
  - user can choose what core to choose for affinity (with_logger_core)
  - compile time filter added
+ - timestamp is made in logger thread
 
 ## [0.2.4]
  - rolling file function is added

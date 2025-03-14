@@ -252,18 +252,7 @@ impl std::fmt::Display for LogLevel {
 #[macro_export]
 macro_rules! trace {
     ($($arg:tt)*) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(feature = "max_level_trace")
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Trace, "not given", text = format!($($arg)*));
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(feature = "release_max_level_trace")
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Trace, "not given", text = format!($($arg)*));
-        
     }};
 }
 
@@ -272,22 +261,6 @@ macro_rules! trace {
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Debug, "not given", text = format!($($arg)*));
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Debug, "not given", text = format!($($arg)*));
     }};
 }
@@ -296,24 +269,6 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Info, "not given", text = format!($($arg)*));
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Info, "not given", text = format!($($arg)*));
     }};
 }
@@ -322,26 +277,6 @@ macro_rules! info {
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_warn",
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Warn, "not given", text = format!($($arg)*) );
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_warn",
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Warn, "not given", text = format!($($arg)*));
     }};
 }
@@ -350,28 +285,6 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_error",
-                feature = "max_level_warn",
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Error, "not given", text = format!($($arg)*));
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_error",
-                feature = "release_max_level_warn",
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Error, "not given", text = format!($($arg)*));
     }};
 }
@@ -381,38 +294,10 @@ macro_rules! error {
 #[macro_export]
 macro_rules! log_trace {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $($key=$value),+);
     }};
 
     ($topic:expr, $struct:expr) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $struct);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Trace, $topic, $struct);
     }};
 }
@@ -421,41 +306,9 @@ macro_rules! log_trace {
 #[macro_export]
 macro_rules! log_debug {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $($key=$value),+);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $($key=$value),+);
     }};
     ($topic:expr, $struct:expr) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $struct);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Debug, $topic, $struct);
     }};
 }
@@ -464,45 +317,9 @@ macro_rules! log_debug {
 #[macro_export]
 macro_rules! log_info {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $($key=$value),+);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Info, $topic, $($key=$value),+);
     }};
     ($topic:expr, $struct:expr) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Info, $topic, $struct);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Info, $topic, $struct);
     }};
 }
@@ -512,49 +329,9 @@ macro_rules! log_info {
 #[macro_export]
 macro_rules! log_warn {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_warn",
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $($key=$value),+);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_warn",
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $($key=$value),+);
     }};
     ($topic:expr, $struct:expr) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_warn",
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $struct);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_warn",
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Warn, $topic, $struct);
     }};
 }
@@ -564,53 +341,9 @@ macro_rules! log_warn {
 #[macro_export]
 macro_rules! log_error {
     ($topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_error",
-                feature = "max_level_warn",
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Error, $topic, $($key=$value),+);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_error",
-                feature = "release_max_level_warn",
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Error, $topic, $($key=$value),+);
     }};
     ($topic:expr, $struct:expr) => {{
-        #[cfg(all(
-            debug_assertions,
-            any(
-                feature = "max_level_error",
-                feature = "max_level_warn",
-                feature = "max_level_info",
-                feature = "max_level_debug",
-                feature = "max_level_trace"
-            )
-        ))]
-        $crate::log_fn_json!($crate::LogLevel::Error, $topic, $struct);
-
-        #[cfg(all(
-            not(debug_assertions),
-            any(
-                feature = "release_max_level_error",
-                feature = "release_max_level_warn",
-                feature = "release_max_level_info",
-                feature = "release_max_level_debug",
-                feature = "release_max_level_trace"
-            )
-        ))]
         $crate::log_fn_json!($crate::LogLevel::Error, $topic, $struct);
     }};
 }
@@ -618,12 +351,10 @@ macro_rules! log_error {
 #[macro_export]
 macro_rules! log_fn_json {
     ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        let max_log_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
-        if $level <= max_log_level {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             //
-            
             $(
                 #[allow(non_snake_case)]
                 let $key = $value.clone();
@@ -667,8 +398,7 @@ macro_rules! log_fn_json {
 
     // In case of structs
     ($level:expr, $topic:expr, $struct:expr) => {{
-        let current_level = $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
-        if $level <= current_level {
+        if $level <= $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             #[allow(non_snake_case)]
@@ -756,8 +486,7 @@ macro_rules! flushing_log_trace {
 #[macro_export]
 macro_rules! flushing_log_fn_json {
     ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        let max_log_level = $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
-        if $level <= max_log_level {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
@@ -798,8 +527,7 @@ macro_rules! flushing_log_fn_json {
 
     // In case of structs
     ($level:expr, $topic:expr, $struct:expr) => {{
-        let current_level = $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
-        if $level <= current_level {
+        if $level <= $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {

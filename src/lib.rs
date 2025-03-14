@@ -91,6 +91,7 @@ pub mod timer;
 pub mod logger_v2;
 pub mod logger;
 pub mod rolling_file;
+pub mod compile_time;
 
 pub use crate::timer::{
     get_unix_nano,
@@ -115,3 +116,87 @@ pub use rolling_file::{
 pub use serde_json;
 
 
+/*
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+147 |     let _ = flashlog_array_80bytes();
+    |     +++++++
+
+warning: `example-flashlog` (bin "example-flashlog") generated 4 warnings
+    Finished `release` profile [optimized] target(s) in 1.61s
+     Running `target\release\example-flashlog.exe`
+Start test: struct containing 80 bytes array
+Iteration: 500000, Test number: 10
+At each test, sleep for 2 seconds and log warm up msg
+Test number: 0, Elapsed time: 115.9 ns
+Test number: 1, Elapsed time: 125.3 ns
+Test number: 2, Elapsed time: 136.1 ns
+Test number: 3, Elapsed time: 120.6 ns
+Test number: 4, Elapsed time: 132.0 ns
+Test number: 5, Elapsed time: 130.8 ns
+Test number: 6, Elapsed time: 127.1 ns
+Test number: 7, Elapsed time: 125.4 ns
+Test number: 8, Elapsed time: 122.9 ns
+Test number: 9, Elapsed time: 123.3 ns
+Average time: 125.9 ns
+
+D:\Projects\flashlog\examples\flashlog>cargo run --release --features arr
+   Compiling example-flashlog v0.1.0 (D:\Projects\flashlog\examples\flashlog)
+warning: use of deprecated macro `flashlog::flushing_log_info`: Use flashlog::flush! instead
+   --> src/main.rs:138:5
+    |
+138 |     flashlog::flushing_log_info!("Log message", data = "data"); // This logs and flushes together
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: function `flashlog_i32` is never used
+  --> src/main.rs:81:4
+   |
+81 | fn flashlog_i32() -> Result<()> {
+   |    ^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `test_logger` is never used
+   --> src/main.rs:124:4
+    |
+124 | fn test_logger() -> Result<()> {
+    |    ^^^^^^^^^^^
+
+warning: unused `Result` that must be used
+   --> src/main.rs:147:5
+    |
+147 |     flashlog_array_80bytes();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+147 |     let _ = flashlog_array_80bytes();
+    |     +++++++
+
+warning: `example-flashlog` (bin "example-flashlog") generated 4 warnings
+    Finished `release` profile [optimized] target(s) in 1.66s
+     Running `target\release\example-flashlog.exe`
+Start test: struct containing 80 bytes array
+Iteration: 500000, Test number: 10
+At each test, sleep for 2 seconds and log warm up msg
+Test number: 0, Elapsed time: 134.7 ns
+Test number: 1, Elapsed time: 112.9 ns
+Test number: 2, Elapsed time: 128.7 ns
+Test number: 3, Elapsed time: 130.4 ns
+Test number: 4, Elapsed time: 114.0 ns
+Test number: 5, Elapsed time: 106.9 ns
+Test number: 6, Elapsed time: 95.7 ns
+Test number: 7, Elapsed time: 116.7 ns
+Test number: 8, Elapsed time: 114.0 ns
+Test number: 9, Elapsed time: 115.4 ns
+Average time: 116.9 ns
+
+D:\Projects\flashlog\examples\flashlog>
+*/
