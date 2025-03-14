@@ -32,7 +32,7 @@ flashlog = {version = "0.3", features = ["max-level-info"]}
 ```
 
 The compile time feature `max-level-info` is optional and can be omitted. It sets the maximum log level to `Info` at compile time.
-Users can still use runtime log level filtering, but the compile-time option takes precedence over runtime conditions.
+`flash_xxx_ct!` macros are filtered only by the compile-time feature not using the runtime configuration.
 
 Available compile-time features are:
 - `max-level-off`
@@ -123,7 +123,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_console_report(true)                   // Enable logging to the console
         .with_msg_flush_interval(2_000_000_000)      // Flush every 2 seconds
         .with_msg_buffer_size(10)                    // Flush when there are 10 more log messages
-        .with_max_log_level(LogLevel::Debug)         // Set the maximum log level to Debug
+        //.with_max_log_level(LogLevel::Debug)       // DEPRECATED! compile-time feature flags are recommended
         .with_timezone(TimeZone::Local)              // Use local timezone for timestamps
         .include_unixnano(true)                      // Include unixnano in the log message
         .launch();
@@ -198,7 +198,7 @@ Aug 29 01:53:20.725 INFO Log message: LogStruct { data: [1, 2, 3, 4, 5, 6, 7, 8,
 ### Test machine: Ryzen 7 7700, 3.8 Ghz
 | Logger    | i32           | 80 byte struct  |
 | --------- | ------------- | --------------- |
-| flashlog  | 48 ns         | 60 ns           |
+| flashlog  | 30 ns         | 40 ns           |
 | ftlog     | 260 ns        | 480 ns          |
 | fast_log  | 410 ns        | 358 ns          |
 | slog      | 250 ns        | 452 ns          |

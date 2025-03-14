@@ -143,7 +143,7 @@ macro_rules! log_fn_json_v3 {
     // Case 1: topic, format sring, kv
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),*; $($key:ident = $value:expr),+ $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
                 $(
                     #[allow(non_snake_case)]
                     let $key = $value.clone();
@@ -188,13 +188,13 @@ macro_rules! log_fn_json_v3 {
 
                 $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
             }
-        }
+        //}
     }};
     
     // Case 2: topic, static string, kv
     ($level:expr, $topic:expr; $msg:expr; $($key:ident = $value:expr),+ $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
                 $(
                     #[allow(non_snake_case)]
                     let $key = $value.clone();
@@ -238,13 +238,13 @@ macro_rules! log_fn_json_v3 {
 
                 $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
             }
-        }
+        //}
     }};
     
     // Case 3: topic and formated string
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),* $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
                 let func = move || {
                     let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
                     let unixnano = $crate::get_unix_nano();
@@ -277,13 +277,13 @@ macro_rules! log_fn_json_v3 {
                 };
                 $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
             }
-        }
+        //}
     }};
     
     // Case 4: topic and static string
     ($level:expr, $topic:expr; $msg:expr $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
                 let func = move || {
                     let unixnano = $crate::get_unix_nano();
                     let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -316,13 +316,13 @@ macro_rules! log_fn_json_v3 {
 
                 $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
             }
-        }
+        //}
     }};
 
     // **Case 7: Single key-value pair without topic**
     ($level:expr, $key:ident = $value:expr) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
                 $(
                     #[allow(non_snake_case)]
                     let $key = $value.clone();
@@ -365,13 +365,13 @@ macro_rules! log_fn_json_v3 {
 
                 $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
             }
-        }
+        //}
     }};
     
     // **Case 8: Multiple key-value pairs without topic**
     ($level:expr, $($key:ident = $value:expr),+ $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
+            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
                 $(
                     #[allow(non_snake_case)]
                     let $key = $value.clone();
@@ -414,7 +414,7 @@ macro_rules! log_fn_json_v3 {
 
                 $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
             }
-        }
+        //}
     }};
 }
 

@@ -682,6 +682,7 @@ impl Logger {
         self
     }
 
+    #[deprecated(since = "0.3.0", note = "it is recommended to use compile time filter options and use flash_xxxx_ct! instead")]
     pub fn with_max_log_level(self, level: LogLevel) -> Logger {
         MAX_LOG_LEVEL.store(level.as_usize(), Ordering::Relaxed);
         self

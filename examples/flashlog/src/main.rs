@@ -38,17 +38,19 @@ fn flashlog_array_80bytes() -> Result<()> {
 
     println!("Start test: struct containing 80 bytes array ");
     println!("Iteration: {}, Test number: {}", iteration, test_number);
-    println!("At each test, sleep for 2 seconds and log warm up msg");
+    let sleep_sec = 2;
+    println!("At each test, sleep for {} seconds and log warm up msg", sleep_sec);
+    flashlog::flash_error_ct!("Warm up");
+    flashlog::flash_error_ct!("Warm up");
     for _ in 0..test_number {
-        std::thread::sleep(std::time::Duration::from_secs(2));
-        flashlog::flash_info!("Warm up");
+        std::thread::sleep(std::time::Duration::from_secs(sleep_sec));
         let start = flashlog::get_unix_nano();
         for _ in 0..iteration {
             flashlog::flash_error_ct!(LogStruct = log_struct);
             flashlog::flash_warn_ct!(LogStruct = log_struct);
             flashlog::flash_info_ct!(LogStruct = log_struct);
-            flashlog::flash_debug_ct!(LogStruct = log_struct);
-            flashlog::flash_trace_ct!(LogStruct = log_struct);
+            //flashlog::flash_debug_ct!(LogStruct = log_struct);
+            //flashlog::flash_trace_ct!(LogStruct = log_struct);
             
             /*
             flashlog::flash_error!(LogStruct = log_struct);
@@ -67,11 +69,11 @@ fn flashlog_array_80bytes() -> Result<()> {
 
     let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
 
-    for (i, res) in ave_res.iter().enumerate() {
+    for (i, res) in ave_res.iter().skip(1).enumerate() {
         println!("Test number: {}, Elapsed time: {:.1} ns", i, res);
     }
 
-    println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
+    println!("Average time: {:.1} ns", ave_res.iter().skip(1).sum::<f64>() / (test_number as f64 -1.0));
 
     
     Ok(())
@@ -96,13 +98,17 @@ fn flashlog_i32() -> Result<()> {
 
     println!("Start test: i32 ");
     println!("Iteration: {}, Test number: {}", iteration, test_number);
-    println!("At each test, sleep for 2 seconds and log warm up msg");
+    let sleep_sec = 2;
+    println!("At each test, sleep for {} seconds and log warm up msg", sleep_sec);
+    flashlog::flash_error_ct!("Warm up");
+    flashlog::flash_error_ct!("Warm up");
     for _ in 0..test_number {
-        std::thread::sleep(std::time::Duration::from_secs(1));
-        flashlog::flash_info!("Warm up");
+        std::thread::sleep(std::time::Duration::from_secs(sleep_sec));
         let start = flashlog::get_unix_nano();
         for i in 0..iteration {
             flashlog::flash_error_ct!(log_int = i);
+            flashlog::flash_warn_ct!(log_int = i);
+            flashlog::flash_info_ct!(log_int = i);
         }
         let elapsed = flashlog::get_unix_nano() - start;
         res_vec.push(elapsed);
@@ -111,11 +117,11 @@ fn flashlog_i32() -> Result<()> {
 
     let ave_res: Vec<f64> = res_vec.iter().map(|x| *x as f64 / iteration as f64).collect();
 
-    for (i, res) in ave_res.iter().enumerate() {
+    for (i, res) in ave_res.iter().enumerate().skip(1) {
         println!("Test number: {}, Elapsed time: {:.1} ns", i, res);
     }
 
-    println!("Average time: {:.1} ns", ave_res.iter().sum::<f64>() / test_number as f64);
+    println!("Average time: {:.1} ns", ave_res.iter().skip(1).sum::<f64>() / (test_number as f64 -1.0));
     
     Ok(())
 }
