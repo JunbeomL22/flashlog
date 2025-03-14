@@ -6,6 +6,14 @@ A blazingly fast Rust logging library with lazy evaluation.
 [![Documentation](https://docs.rs/flashlog/badge.svg)](https://docs.rs/flashlog)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+## Important Changes in Version 0.3.0
+
+1. **Cloning in New Macros**: In `flash_xxx_ct!` macros, cloning happens automatically inside the macro. Users don't need to clone data outside the macro, but be aware that implicit cloning still occurs in the worker thread.
+
+2. **Timestamp Generation**: Timestamps are now generated in the logger thread rather than the worker thread.
+
+3. **Compile-Time Feature Options**: New compile-time feature options have been added, compatible with the `flash_xxx_ct!` macros. The `flash_xxx!` macros are now deprecated in favor of the new compile-time filtered macros.
+
 ## Features
 
 - **Lazy Evaluation**: Most evaluations are performed in the logger thread, resulting in exceptional performance.
@@ -20,13 +28,24 @@ Add FlashLog to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-flashlog = "0.2"
+flashlog = {version = "0.3", features = ["max-level-info"]}
 ```
+
+The compile time feature `max-level-info` is optional and can be omitted. It sets the maximum log level to `Info` at compile time.
+Users can still use runtime log level filtering, but the compile-time option takes precedence over runtime conditions.
+
+Available compile-time features are:
+- `max-level-off`
+- `max-level-error`
+- `max-level-warn`
+- `max-level-info`
+- `max-level-debug`
+- `max-level-trace`
 
 Basic usage example:
 
 ```rust
-use flashlog::{Logger, LogLevel, flash_info};
+use flashlog::{Logger, LogLevel, flash_info_ct};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let logger = Logger::initialize()
@@ -34,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_max_log_level(LogLevel::Info)
         .launch();
 
-    flash_info!("Hello, FlashLog!");
+    flash_info_ct!("Hello, FlashLog!");
 
     Ok(())
 }
@@ -48,7 +67,7 @@ FlashLog can easily log custom structs:
 
 ```rust
 use serde::{Deserialize, Serialize};
-use flashlog::{Logger, LogLevel, flash_info};
+use flashlog::{Logger, LogLevel, flash_info_ct};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LogStruct {
@@ -68,18 +87,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .launch();
 
     let log_struct = LogStruct::default();
-    flash_info!("Log message"; log_struct = log_struct);
+    flash_info_ct!("Log message"; log_struct = log_struct); 
 
     Ok(())
 }
 ```
 
-## Configuration and Lof Interfaces
+## Configuration and Log Interfaces
 
 Topic and message are optional and separated by a semicolon. In addition, messages can be added with key-value pairs
 
 ```rust
-use flashlog::{flash_info, flush, Logger, LogLevel, TimeZone};
+use flashlog::{flash_info_ct, flush, Logger, LogLevel, TimeZone, RollingPeriod};
 
 pub enum Hello {
     World,
@@ -106,28 +125,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_msg_buffer_size(10)                    // Flush when there are 10 more log messages
         .with_max_log_level(LogLevel::Debug)         // Set the maximum log level to Debug
         .with_timezone(TimeZone::Local)              // Use local timezone for timestamps
+        .include_unixnano(true)                      // Include unixnano in the log message
         .launch();
 
-    flash_info!(Hello::FlashLog);
-    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:346","time":"20:34:30.684:921:877","topic":"World"}
-    flash_info!(Hello::World);
-    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:347","time":"20:34:30.684:922:238","topic":"FlashLog"}
-    flash_info!("Hello");
-    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:348","time":"20:34:30.684:922:488","topic":"Hello"}
-    flash_info!("Hello"; "FlashLog");
-    // {"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:349","time":"20:34:30.684:922:739","topic":"Hello"}
-    flash_info!("Hello"; "FlashLog"; version = "0.1.0");
-    // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:350","time":"20:34:30.684:924:813","topic":"Hello"}
-    flash_info!("Hello"; "FlashLog"; version = "0.1.0", author = "John Doe");
-    // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:351","time":"20:34:30.684:925:143","topic":"Hello"}
-    flash_info!(version = "0.1.0");
-    // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:352","time":"20:34:30.684:925:394","topic":""}
-    flash_info!(version = "0.1.0", author = "John Doe");
-    // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:353","time":"20:34:30.684:925:654","topic":""}
-    flash_info!("topic1"; "message {} {}", 1, 2);
-    // {"data":"","date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:354","time":"20:34:30.684:925:955","topic":"topic1"}
-    flash_info!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
-    // {"data":{"struct_info":1,"struct_info2":2},"date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:355","time":"20:34:30.684:926:847","topic":"topic2"}
+    flash_info_ct!(Hello::FlashLog);
+    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:346","time":"20:34:30.684:921:877","topic":"World", "unixnano": 1741046422247135000}
+    flash_info_ct!(Hello::World);
+    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:347","time":"20:34:30.684:922:238","topic":"FlashLog", "unixnano": 1741046422247135000}
+    flash_info_ct!("Hello");
+    // {"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:348","time":"20:34:30.684:922:488","topic":"Hello", "unixnano": 1741046422247135000}
+    flash_info_ct!("Hello"; "FlashLog");
+    // {"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:349","time":"20:34:30.684:922:739","topic":"Hello", "unixnano": 1741046422247135000}
+    flash_info_ct!("Hello"; "FlashLog"; version = "0.1.0");
+    // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:350","time":"20:34:30.684:924:813","topic":"Hello", "unixnano": 1741046422247135000}
+    flash_info_ct!("Hello"; "FlashLog"; version = "0.1.0", author = "John Doe");
+    // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"FlashLog","offset":9,"src":"src\\logger_v2.rs:351","time":"20:34:30.684:925:143","topic":"Hello", "unixnano": 1741046422247135000}
+    flash_info_ct!(version = "0.1.0");
+    // {"data":{"version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:352","time":"20:34:30.684:925:394","topic":"", "unixnano": 1741046422247135000}
+    flash_info_ct!(version = "0.1.0", author = "John Doe");
+    // {"data":{"author":"John Doe","version":"0.1.0"},"date":"20240915","level":"Info","message":"","offset":9,"src":"src\\logger_v2.rs:353","time":"20:34:30.684:925:654","topic":"", "unixnano": 1741046422247135000}
+    flash_info_ct!("topic1"; "message {} {}", 1, 2);
+    // {"data":"","date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:354","time":"20:34:30.684:925:955","topic":"topic1", "unixnano": 1741046422247135000}
+    flash_info_ct!("topic2"; "message {} {}", 1, 2; struct_info = 1, struct_info2 = 2);
+    // {"data":{"struct_info":1,"struct_info2":2},"date":"20240915","level":"Info","message":"message 1 2","offset":9,"src":"src\\logger_v2.rs:355","time":"20:34:30.684:926:847","topic":"topic2", "unixnano": 1741046422247135000}
     flush!(); // this flushes regardless of the buffer size and flush interval
 
     Ok(())
@@ -208,4 +228,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-

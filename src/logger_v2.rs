@@ -48,6 +48,7 @@ macro_rules! log_with_level {
     }};
 }
 
+#[deprecated(since = "0.3.0", note = "Use flash_trace_ct! instead")]
 #[macro_export]
 macro_rules! flash_trace {
     // Handle one or more key-value pairs without a topic
@@ -61,6 +62,7 @@ macro_rules! flash_trace {
     };
 }
 
+#[deprecated(since = "0.3.0", note = "Use flash_debug_ct! instead")]
 #[macro_export]
 macro_rules! flash_debug {
     // Handle one or more key-value pairs without a topic
@@ -73,6 +75,7 @@ macro_rules! flash_debug {
     };
 }
 
+#[deprecated(since = "0.3.0", note = "Use flash_info_ct! instead")]
 #[macro_export]
 macro_rules! flash_info {
     // Handle one or more key-value pairs without a topic
@@ -85,6 +88,7 @@ macro_rules! flash_info {
     };
 }
 
+#[deprecated(since = "0.3.0", note = "Use flash_warn_ct! instead")]
 #[macro_export]
 macro_rules! flash_warn {
     // Handle one or more key-value pairs without a topic
@@ -97,6 +101,7 @@ macro_rules! flash_warn {
     };
 }
 
+#[deprecated(since = "0.3.0", note = "Use flash_error_ct! instead")]
 #[macro_export]
 macro_rules! flash_error {
     // Handle one or more key-value pairs without a topic
