@@ -143,278 +143,267 @@ macro_rules! log_fn_json_v3 {
     // Case 1: topic, format sring, kv
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),*; $($key:ident = $value:expr),+ $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
-                $(
-                    #[allow(non_snake_case)]
-                    let $key = $value.clone();
-                )+
-                let func = move || {
-                    let json_obj = $crate::serde_json::json!({
-                        $(
-                            stringify!($key): $key,
-                        )+
-                    });
-                    let unixnano = $crate::get_unix_nano();
-                    let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
-                    let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                    let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
-                    
-                    let json_msg = match include_unixnano {
-                        false => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic,
-                            "data": json_obj,
-                            "message": format!($fmt, $($arg),*),
-                        }),
-                        true => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic,
-                            "data": json_obj,
-                            "message": format!($fmt, $($arg),*),
-                            "unixnano": unixnano,
-                        }),
-                    };
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )+
 
-                    json_msg.to_string() + "\n"
+            let func = move || {
+                let json_obj = $crate::serde_json::json!({
+                    $(
+                        stringify!($key): $key,
+                    )+
+                });
+                let unixnano = $crate::get_unix_nano();
+                let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": format!($fmt, $($arg),*),
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": format!($fmt, $($arg),*),
+                        "unixnano": unixnano,
+                    }),
                 };
 
-                $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
-            }
-        //}
+                json_msg.to_string() + "\n"
+            };
+
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+        }
     }};
     
     // Case 2: topic, static string, kv
     ($level:expr, $topic:expr; $msg:expr; $($key:ident = $value:expr),+ $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
-                $(
-                    #[allow(non_snake_case)]
-                    let $key = $value.clone();
-                )*
-                let func = move || {
-                    let json_obj = $crate::serde_json::json!({
-                        $(
-                            stringify!($key): $key,
-                        )+
-                    });
-                    let unixnano = $crate::get_unix_nano();
-                    let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
-                    let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                    let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
-                    let json_msg = match include_unixnano {
-                        false => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic,
-                            "data": json_obj,
-                            "message": $msg,
-                        }),
-                        true => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic,
-                            "data": json_obj,
-                            "message": $msg,
-                            "unixnano": unixnano,
-                        }),
-                    };
-
-                    json_msg.to_string() + "\n"
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
+            let func = move || {
+                let json_obj = $crate::serde_json::json!({
+                    $(
+                        stringify!($key): $key,
+                    )+
+                });
+                let unixnano = $crate::get_unix_nano();
+                let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": $msg,
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "data": json_obj,
+                        "message": $msg,
+                        "unixnano": unixnano,
+                    }),
                 };
 
-                $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
-            }
-        //}
+                json_msg.to_string() + "\n"
+            };
+
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+        }
     }};
     
     // Case 3: topic and formated string
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),* $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
-                let func = move || {
-                    let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                    let unixnano = $crate::get_unix_nano();
-                    let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
-                    let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
-                    let json_msg = match include_unixnano {
-                        false => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic,
-                            "message": format!($fmt, $($arg),*),
-                            "data": "",
-                        }),
-                        true => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic,
-                            "message": format!($fmt, $($arg),*),
-                            "data": "",
-                            "unixnano": unixnano,
-                        }),
-                    };
-                    json_msg.to_string() + "\n"
+            let func = move || {
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let unixnano = $crate::get_unix_nano();
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "message": format!($fmt, $($arg),*),
+                        "data": "",
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic,
+                        "message": format!($fmt, $($arg),*),
+                        "data": "",
+                        "unixnano": unixnano,
+                    }),
                 };
-                $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
-            }
-        //}
+                json_msg.to_string() + "\n"
+            };
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+        }
     }};
     
     // Case 4: topic and static string
     ($level:expr, $topic:expr; $msg:expr $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
-                let func = move || {
-                    let unixnano = $crate::get_unix_nano();
-                    let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
-                    let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                    let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
-                    let json_msg = match include_unixnano {
-                        false => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic.to_string(),
-                            "message": $msg
-                        }),
-                        true => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": $topic.to_string(),
-                            "message": $msg,
-                            "unixnano": unixnano,
-                        }),
-                    };
-
-                    json_msg.to_string() + "\n"
+            let func = move || {
+                let unixnano = $crate::get_unix_nano();
+                let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic.to_string(),
+                        "message": $msg
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": $topic.to_string(),
+                        "message": $msg,
+                        "unixnano": unixnano,
+                    }),
                 };
 
-                $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
-            }
-        //}
+                json_msg.to_string() + "\n"
+            };
+
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+        }
     }};
 
     // **Case 7: Single key-value pair without topic**
     ($level:expr, $key:ident = $value:expr) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
-                $(
-                    #[allow(non_snake_case)]
-                    let $key = $value.clone();
-                )*
-                let func = move || {
-                    let unixnano = $crate::get_unix_nano();
-                    let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
-                    let json_obj = $crate::serde_json::json!({
-                        $(
-                            stringify!($key): $key,
-                        )+
-                    });
-                    let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                    let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
-                    let json_msg = match include_unixnano {
-                        false => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": "",
-                            "data": json_obj,
-                            "message": "",
-                        }),
-                        true => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "topic": "",
-                            "data": json_obj,
-                            "message": "",
-                            "unixnano": unixnano,
-                        }),
-                    };
-                    json_msg.to_string() + "\n"
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
+            let func = move || {
+                let unixnano = $crate::get_unix_nano();
+                let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+                let json_obj = $crate::serde_json::json!({
+                    $(
+                        stringify!($key): $key,
+                    )+
+                });
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": "",
+                        "data": json_obj,
+                        "message": "",
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "topic": "",
+                        "data": json_obj,
+                        "message": "",
+                        "unixnano": unixnano,
+                    }),
                 };
+                json_msg.to_string() + "\n"
+            };
 
-                $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
-            }
-        //}
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+        }
     }};
     
     // **Case 8: Multiple key-value pairs without topic**
     ($level:expr, $($key:ident = $value:expr),+ $(,)?) => {{
         if $level <= $crate::compile_time::MAX_LEVEL {
-            //if $level <= $crate::logger::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed) {
-                $(
-                    #[allow(non_snake_case)]
-                    let $key = $value.clone();
-                )*
-                let func = move || {
-                    let unixnano = $crate::get_unix_nano();
-                    let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
-                    let json_obj = $crate::serde_json::json!({
-                        $(
-                            stringify!($key): $key,
-                        )+
-                    });
-                    let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
-                    let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
-                    let json_msg = match include_unixnano {
-                        false => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "data": json_obj,
-                            "topic": "",
-                            "message": "",
-                        }),
-                        true => $crate::serde_json::json!({
-                            "date": date,
-                            "time": time,
-                            "offset": timezone,
-                            "level": $crate::compile_time::usize_to_level($level),
-                            "src": format!("{}:{}", file!(), line!()),
-                            "data": json_obj,
-                            "topic": "",
-                            "message": "",
-                            "unixnano": unixnano,
-                        }),
-                    };
-                    json_msg.to_string() + "\n"
+            $(
+                #[allow(non_snake_case)]
+                let $key = $value.clone();
+            )*
+            let func = move || {
+                let unixnano = $crate::get_unix_nano();
+                let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
+                let json_obj = $crate::serde_json::json!({
+                    $(
+                        stringify!($key): $key,
+                    )+
+                });
+                let timezone = $crate::TIMEZONE.load(std::sync::atomic::Ordering::Relaxed);
+                let (date, time) = $crate::convert_unix_nano_to_date_and_time(unixnano, timezone);
+                let json_msg = match include_unixnano {
+                    false => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "data": json_obj,
+                        "topic": "",
+                        "message": "",
+                    }),
+                    true => $crate::serde_json::json!({
+                        "date": date,
+                        "time": time,
+                        "offset": timezone,
+                        "level": $crate::compile_time::usize_to_level($level),
+                        "src": format!("{}:{}", file!(), line!()),
+                        "data": json_obj,
+                        "topic": "",
+                        "message": "",
+                        "unixnano": unixnano,
+                    }),
                 };
+                json_msg.to_string() + "\n"
+            };
 
-                $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
-            }
-        //}
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+        }
     }};
 }
 
