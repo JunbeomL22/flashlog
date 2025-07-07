@@ -42,7 +42,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let affinity_core = LOGGER_CORE.load(Ordering::SeqCst);
     let mut last_flush_time = get_unix_nano();
 
-    *LOGGER_HANDLER.lock().unwrap() = Some(thread::spawn(move || {
+    *LOGGER_HANDLER.lock().expect("Logger hander lock") = Some(thread::spawn(move || {
         let mut rolling_writer: Option<RollingFileWriter> = None;
         let file_report = FILE_REPORT.load(Ordering::Relaxed);
         let console_report = CONSOLE_REPORT.load(Ordering::Relaxed);
@@ -63,7 +63,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
 
                         if file_report {
                             if let Some(ref mut writer) = rolling_writer {    
-                                writer.write_all(output.as_bytes()).unwrap();
+                                writer.write_all(output.as_bytes()).expect("Failed to write to log file");
                             }
                         }
                         
@@ -82,7 +82,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let output = message_queue.join("");
                     if file_report {
                         if let Some(ref mut writer) = rolling_writer {
-                            writer.write_all(output.as_bytes()).unwrap();
+                            writer.write_all(output.as_bytes()).expect("Failed to flush to log file");
                         }
                     }
                     if console_report {
@@ -103,7 +103,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         let output = message_queue.join("");
                         if file_report {
                             if let Some(ref mut writer) = rolling_writer {
-                                writer.write_all(output.as_bytes()).unwrap();
+                                writer.write_all(output.as_bytes()).expect("Failed to write to log file");
                             }
                         }
 
@@ -114,7 +114,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                 }
                 LogMessage::SetFile(config) => {
                     if let Some(ref mut writer) = rolling_writer {
-                        writer.flush().unwrap();
+                        writer.flush().expect("Failed to flush log file writer");
                         let _ = writer.sync_all();
                     } else {
                         let writer = RollingFileWriter::new(config).expect("Failed to create RollingFileWriter");
@@ -125,8 +125,8 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let output = message_queue.join("");
                     if file_report {
                         if let Some(ref mut writer) = rolling_writer {
-                            writer.write_all(output.as_bytes()).unwrap();
-                            writer.flush().unwrap();
+                            writer.write_all(output.as_bytes()).expect("Failed to flush log file writer");
+                            writer.flush().expect("Failed to flush log file writer");
                             let _ = writer.sync_all();
                         }
                     }
@@ -137,7 +137,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     last_flush_time = get_unix_nano();
                 }
                 LogMessage::SetCore => {
-                    let available_core_ids = core_affinity::get_core_ids().unwrap();
+                    let available_core_ids = core_affinity::get_core_ids().expect("Failed to get available core IDs");
                     let core_id = if affinity_core == -1 {
                         available_core_ids.first().cloned()
                     } else {
@@ -157,8 +157,8 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let output = message_queue.join("");
                     if file_report {
                         if let Some(ref mut writer) = rolling_writer {
-                            writer.write_all(output.as_bytes()).unwrap();
-                            writer.flush().unwrap();
+                            writer.write_all(output.as_bytes()).expect("Failed to write to log file in Close");
+                            writer.flush().expect("Failed to flush log file writer in Close");
                             let _ = writer.sync_all();
                         }
                     }
@@ -351,7 +351,7 @@ macro_rules! log_error {
 #[macro_export]
 macro_rules! log_fn_json {
     ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             //
@@ -392,13 +392,13 @@ macro_rules! log_fn_json {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
 
     // In case of structs
     ($level:expr, $topic:expr, $struct:expr) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             #[allow(non_snake_case)]
@@ -434,7 +434,7 @@ macro_rules! log_fn_json {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
 }
@@ -486,7 +486,7 @@ macro_rules! flushing_log_trace {
 #[macro_export]
 macro_rules! flushing_log_fn_json {
     ($level:expr, $topic:expr, $($key:ident=$value:expr),+ $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let unixnano = $crate::get_unix_nano();
             let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
             let func = move || {
@@ -564,7 +564,7 @@ macro_rules! flushing_log_fn_json {
                     }
                 }
             };
-            $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).expect("Failed to send flushing log message");
         }
     }};
 }
@@ -601,7 +601,7 @@ impl std::error::Error for LoggerError {}
 impl Logger {
     pub fn finalize() {
         let _ = LOG_SENDER.try_send(LogMessage::Close);
-        if let Some(handler) = LOGGER_HANDLER.lock().unwrap().take() {
+        if let Some(handler) = LOGGER_HANDLER.lock().expect("Failed to lock LOGGER_HANDLER").take() {
             let _ = handler.join();
         }
     }

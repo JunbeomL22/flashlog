@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! flush {
     () => {{
-        $crate::LOG_SENDER.try_send($crate::LogMessage::Flush).unwrap();
+        $crate::LOG_SENDER.try_send($crate::LogMessage::Flush).expect("Failed to send flush message");
     }};
 }
 
@@ -118,7 +118,7 @@ macro_rules! flash_error {
 macro_rules! log_fn_json_v2 {
     // Case 1: topic, format sring, kv
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),*; $($key:ident = $value:expr),+ $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let func = move || {
                 let unixnano = $crate::get_unix_nano();
                 let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -157,13 +157,13 @@ macro_rules! log_fn_json_v2 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
     // Case 2: topic, static string, kv
     ($level:expr, $topic:expr; $msg:expr; $($key:ident = $value:expr),+ $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let func = move || {
                 let unixnano = $crate::get_unix_nano();
                 let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -201,13 +201,13 @@ macro_rules! log_fn_json_v2 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
     // Case 3: topic and formated string
     ($level:expr, $topic:expr; $fmt:expr, $($arg:expr),* $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let func = move || {
                 let unixnano = $crate::get_unix_nano();
                 let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -238,13 +238,13 @@ macro_rules! log_fn_json_v2 {
                 };
                 json_msg.to_string() + "\n"
             };
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
     // Case 4: topic and static string
     ($level:expr, $topic:expr; $msg:expr $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let func = move || {
                 let unixnano = $crate::get_unix_nano();
                 let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -275,13 +275,13 @@ macro_rules! log_fn_json_v2 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
 
     // **Case 7: Single key-value pair without topic**
     ($level:expr, $key:ident = $value:expr) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let func = move || {
                 let unixnano = $crate::get_unix_nano();
                 let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -318,13 +318,13 @@ macro_rules! log_fn_json_v2 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
     // **Case 8: Multiple key-value pairs without topic**
     ($level:expr, $($key:ident = $value:expr),+ $(,)?) => {{
-        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).unwrap() {
+        if $level <= $crate::LogLevel::from_usize($crate::MAX_LOG_LEVEL.load(std::sync::atomic::Ordering::Relaxed)).expect("Invalid log level") {
             let func = move || {
                 let unixnano = $crate::get_unix_nano();
                 let include_unixnano = $crate::logger::INCLUDE_UNIXNANO.load(std::sync::atomic::Ordering::Relaxed);
@@ -361,7 +361,7 @@ macro_rules! log_fn_json_v2 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
 }

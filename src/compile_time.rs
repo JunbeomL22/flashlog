@@ -186,7 +186,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
@@ -234,7 +234,8 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func)))
+                .expect("Failed to send log message");
         }
     }};
     
@@ -271,7 +272,7 @@ macro_rules! log_fn_json_v3 {
                 };
                 json_msg.to_string() + "\n"
             };
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
@@ -308,7 +309,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
 
@@ -355,7 +356,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
     
@@ -402,7 +403,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
         }
     }};
 }
