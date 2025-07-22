@@ -1,6 +1,6 @@
 [package]
 name = "flashlog"
-version = "0.3.2"
+version = "0.3.3"
 edition = "2021"
 authors = ["Junbeom Lee <junbeoml22@gmail.com>"]
 description = "A fast logging library for Rust"
@@ -33,6 +33,7 @@ criterion = "0.5"
 
 [workspace]
 members = ["examples/*"]
+
 
 [features]
 max-level-off = []

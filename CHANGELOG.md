@@ -4,9 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2025-07-22
+ - Replace expect with unwrap for crossbeam try_send and write_all operations to avoid overhead
+ - Update flush condition logic to enable immediate flushing with zero buffer size and interval
+   - Changed from `(buffer_size + new_msg_length > msg_buffer_size) || (current_timestamp - last_flush_time > msg_flush_interval)`
+   - To `(buffer_size + new_msg_length >= msg_buffer_size) || (current_timestamp >= msg_flush_interval + last_flush_time)`
+ - Update immediate_log example to use only flash_xxx_ct! macros
+
 ## [0.3.2] - 2025-07-07
  - crossbeam version update
- - replace unwrap with expect
+ - replace expect with unwrap
 
 ## [0.3.1] - 2025-03-14
  - performance table in doc comments

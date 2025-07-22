@@ -52,18 +52,18 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let message = lazy_message.eval();
                     let new_msg_length = message.len();
                     let buffer_size = message_queue.len();
-                    let timestamp = get_unix_nano();
+                    let current_timestamp = get_unix_nano();
                     message_queue.push(message);
 
-                    if (buffer_size + new_msg_length > msg_buffer_size)
-                        || (timestamp - last_flush_time > msg_flush_interval)
+                    if (buffer_size + new_msg_length >= msg_buffer_size)
+                        || (current_timestamp >= msg_flush_interval + last_flush_time)
                         // flush if the buffer is full or the time interval is passed
                     {
                         let output = message_queue.join("");
 
                         if file_report {
                             if let Some(ref mut writer) = rolling_writer {    
-                                writer.write_all(output.as_bytes()).expect("Failed to write to log file");
+                                writer.write_all(output.as_bytes()).unwrap();
                             }
                         }
                         
@@ -72,7 +72,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         }
 
                         message_queue.clear();
-                        last_flush_time = get_unix_nano();
+                        last_flush_time = current_timestamp;
                     }
                 }
                 LogMessage::FlushingMessage(lazy_message) => {
@@ -82,7 +82,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let output = message_queue.join("");
                     if file_report {
                         if let Some(ref mut writer) = rolling_writer {
-                            writer.write_all(output.as_bytes()).expect("Failed to flush to log file");
+                            writer.write_all(output.as_bytes()).unwrap();
                         }
                     }
                     if console_report {
@@ -97,13 +97,13 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let timestamp = get_unix_nano();
                     message_queue.push(message.to_string());
 
-                    if (buffer_size + message.len() > msg_buffer_size)
-                        || (timestamp - last_flush_time > msg_flush_interval)
+                    if (buffer_size + message.len() >= msg_buffer_size)
+                        || (timestamp >= msg_flush_interval + last_flush_time)
                     {
                         let output = message_queue.join("");
                         if file_report {
                             if let Some(ref mut writer) = rolling_writer {
-                                writer.write_all(output.as_bytes()).expect("Failed to write to log file");
+                                writer.write_all(output.as_bytes()).unwrap();
                             }
                         }
 
@@ -125,7 +125,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let output = message_queue.join("");
                     if file_report {
                         if let Some(ref mut writer) = rolling_writer {
-                            writer.write_all(output.as_bytes()).expect("Failed to flush log file writer");
+                            writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().expect("Failed to flush log file writer");
                             let _ = writer.sync_all();
                         }
@@ -157,7 +157,7 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                     let output = message_queue.join("");
                     if file_report {
                         if let Some(ref mut writer) = rolling_writer {
-                            writer.write_all(output.as_bytes()).expect("Failed to write to log file in Close");
+                            writer.write_all(output.as_bytes()).unwrap();
                             writer.flush().expect("Failed to flush log file writer in Close");
                             let _ = writer.sync_all();
                         }
@@ -392,7 +392,7 @@ macro_rules! log_fn_json {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 
@@ -434,7 +434,7 @@ macro_rules! log_fn_json {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 }
@@ -564,7 +564,7 @@ macro_rules! flushing_log_fn_json {
                     }
                 }
             };
-            $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).expect("Failed to send flushing log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::FlushingMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 }

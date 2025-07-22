@@ -186,7 +186,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
     
@@ -235,7 +235,7 @@ macro_rules! log_fn_json_v3 {
             };
 
             $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func)))
-                .expect("Failed to send log message");
+                .unwrap();
         }
     }};
     
@@ -272,7 +272,7 @@ macro_rules! log_fn_json_v3 {
                 };
                 json_msg.to_string() + "\n"
             };
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
     
@@ -309,7 +309,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 
@@ -356,7 +356,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
     
@@ -403,7 +403,7 @@ macro_rules! log_fn_json_v3 {
                 json_msg.to_string() + "\n"
             };
 
-            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).expect("Failed to send log message");
+            $crate::LOG_SENDER.try_send($crate::LogMessage::LazyMessage($crate::LazyMessage::new(func))).unwrap();
         }
     }};
 }

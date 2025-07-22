@@ -446,6 +446,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-immediate-log"
+version = "0.1.0"
+dependencies = [
+ "flashlog",
+]
+
+[[package]]
 name = "example-slog"
 version = "0.1.0"
 dependencies = [
@@ -532,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "flashlog"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "chrono",
