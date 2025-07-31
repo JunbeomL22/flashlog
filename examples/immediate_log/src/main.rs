@@ -6,8 +6,8 @@ fn main() {
         .with_file("logs", "immediate") // Log to logs/immediate_*.log
         .unwrap() // Unwrap the Result
         .with_console_report(true) // Also output to console
-        .with_msg_buffer_size(0) // Minimal buffer
-        .with_msg_flush_interval(0) // Immediate flush
+        .with_msg_buffer_size(100) // Minimal buffer
+        .with_msg_flush_interval(100) // Immediate flush
         .with_max_log_level(LogLevel::Info)
         .with_timezone(TimeZone::Seoul)
         .include_unixnano(true)

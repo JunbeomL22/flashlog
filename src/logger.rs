@@ -20,9 +20,9 @@ use std::{
     thread,
 };
 
-static LOG_MESSAGE_BUFFER_SIZE: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(1_000_000));
+pub static LOG_MESSAGE_BUFFER_SIZE: Lazy<AtomicUsize> = Lazy::new(|| AtomicUsize::new(0));
 //2_000_000; // string length
-static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(500_000_000));
+pub static LOG_MESSAGE_FLUSH_INTERVAL: Lazy<AtomicU64> = Lazy::new(|| AtomicU64::new(0));
 //2_000_000_000; // 2 second
 
 pub static INCLUDE_UNIXNANO: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
@@ -36,29 +36,26 @@ pub static LOGGER_CORE: Lazy<AtomicI32> = Lazy::new(|| AtomicI32::new(-1)); // -
 pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
     let (sender, receiver) = unbounded();
 
-    let mut message_queue: Vec<String> = Vec::with_capacity(LOG_MESSAGE_BUFFER_SIZE.load(Ordering::SeqCst));
-    let msg_buffer_size = LOG_MESSAGE_BUFFER_SIZE.load(Ordering::SeqCst);
-    let msg_flush_interval = LOG_MESSAGE_FLUSH_INTERVAL.load(Ordering::SeqCst);
-    let affinity_core = LOGGER_CORE.load(Ordering::SeqCst);
+    let mut message_queue: Vec<String> = Vec::with_capacity(LOG_MESSAGE_BUFFER_SIZE.load(Ordering::SeqCst).max(10));
     let mut last_flush_time = get_unix_nano();
+
+    let mut msg_buffer_size = LOG_MESSAGE_BUFFER_SIZE.load(Ordering::SeqCst);
+    let mut msg_flush_interval = LOG_MESSAGE_FLUSH_INTERVAL.load(Ordering::SeqCst);
+    let mut file_report = FILE_REPORT.load(Ordering::Relaxed);
+    let mut console_report = CONSOLE_REPORT.load(Ordering::Relaxed);
+
+    let affinity_core = LOGGER_CORE.load(Ordering::SeqCst);
 
     *LOGGER_HANDLER.lock().expect("Logger hander lock") = Some(thread::spawn(move || {
         let mut rolling_writer: Option<RollingFileWriter> = None;
-        let file_report = FILE_REPORT.load(Ordering::Relaxed);
-        let console_report = CONSOLE_REPORT.load(Ordering::Relaxed);
         while let Ok(msg) = receiver.recv() {
             match msg {
                 LogMessage::LazyMessage(lazy_message) => {
                     let message = lazy_message.eval();
-                    let new_msg_length = message.len();
-                    let buffer_size = message_queue.len();
                     let current_timestamp = get_unix_nano();
                     message_queue.push(message);
 
-                    if (buffer_size + new_msg_length >= msg_buffer_size)
-                        || (current_timestamp >= msg_flush_interval + last_flush_time)
-                        // flush if the buffer is full or the time interval is passed
-                    {
+                    if msg_buffer_size == 0 || msg_flush_interval == 0 || (message_queue.len() >= msg_buffer_size) || (current_timestamp >= msg_flush_interval + last_flush_time) {
                         let output = message_queue.join("");
 
                         if file_report {
@@ -67,11 +64,10 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                             }
                         }
                         
-                        if console_report {
-                            println!("{}", output);
-                        }
+                        if console_report { println!("{}", output); }
 
                         message_queue.clear();
+
                         last_flush_time = current_timestamp;
                     }
                 }
@@ -166,6 +162,12 @@ pub static LOG_SENDER: Lazy<Sender<LogMessage>> = Lazy::new(|| {
                         println!("{}", output);
                     }
                     break;
+                }
+                LogMessage::SetConfig => {
+                    msg_buffer_size = LOG_MESSAGE_BUFFER_SIZE.load(Ordering::Relaxed);
+                    msg_flush_interval = LOG_MESSAGE_FLUSH_INTERVAL.load(Ordering::Relaxed);
+                    file_report = FILE_REPORT.load(Ordering::Relaxed);
+                    console_report = CONSOLE_REPORT.load(Ordering::Relaxed);
                 }
             }
         }
@@ -696,6 +698,7 @@ impl Logger {
     pub fn launch(self) -> LoggerGuard {
         let rolling_config = self.file_config.clone();
         let _ = LOG_SENDER.send(LogMessage::SetCore);
+        let _ = LOG_SENDER.send(LogMessage::SetConfig);
         if let Some(config) = rolling_config {
             let _ = LOG_SENDER.send(LogMessage::SetFile(config));
         }
@@ -710,6 +713,7 @@ pub enum LogMessage {
     SetFile(RollingConfig),
     Flush,
     SetCore,
+    SetConfig,
     Close,
 }
 

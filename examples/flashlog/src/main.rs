@@ -30,7 +30,7 @@ fn flashlog_array_80bytes() -> Result<()> {
         .include_unixnano(true)
         .launch();
 
-    let iteration = 300_000;
+    let iteration = 500_000;
     let test_number = 5;
     
     let log_struct = LogStruct::default();
