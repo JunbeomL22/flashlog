@@ -453,6 +453,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-modi-file"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "flashlog",
+]
+
+[[package]]
 name = "example-slog"
 version = "0.1.0"
 dependencies = [
@@ -539,7 +547,7 @@ dependencies = [
 
 [[package]]
 name = "flashlog"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "anyhow",
  "chrono",

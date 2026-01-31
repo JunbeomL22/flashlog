@@ -4,6 +4,7 @@ use crate::rolling_file::{
     RollingFileWriter,
     RollingConfig,
     RollingPeriod,
+    set_initial_log_file_path,
 };
 //
 //use anyhow::{anyhow, Ok, Result};
@@ -624,6 +625,7 @@ impl Logger {
             roll_period: Some(RollingPeriod::Daily),
             max_roll_files: Some(10),
             compress: false,
+            initial_file_path: None,
         };
 
         self.file_config = Some(config);
@@ -699,7 +701,9 @@ impl Logger {
         let rolling_config = self.file_config.clone();
         let _ = LOG_SENDER.send(LogMessage::SetCore);
         let _ = LOG_SENDER.send(LogMessage::SetConfig);
-        if let Some(config) = rolling_config {
+        if let Some(mut config) = rolling_config {
+            let file_path = set_initial_log_file_path(&config.base_path, &config.file_name_prefix);
+            config.initial_file_path = Some(file_path);
             let _ = LOG_SENDER.send(LogMessage::SetFile(config));
         }
         LoggerGuard {}

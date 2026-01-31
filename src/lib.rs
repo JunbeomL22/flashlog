@@ -155,5 +155,6 @@ pub use rolling_file::{
     RollingConfig,
     RollingFileWriter,
     RollingPeriod,
+    get_initial_log_file_path,
 };
 pub use serde_json;

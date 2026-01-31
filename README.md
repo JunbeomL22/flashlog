@@ -61,6 +61,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Advanced Usage
 
+### Getting the Log File Path
+
+Since FlashLog appends a timestamp to the file name, you can retrieve the actual file path using `get_initial_log_file_path()`.
+Note: This returns only the initial log file path, not the current file after rolling. This design avoids synchronization overhead to maintain performance.
+
+```rust
+use flashlog::{Logger, get_initial_log_file_path, flash_info_ct, flush};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _logger = Logger::initialize()
+        .with_file("logs", "message")?
+        .with_console_report(true)
+        .launch();
+
+    // Get the log file path (returns Option<PathBuf>)
+    if let Some(path) = get_initial_log_file_path() {
+        println!("Log file: {}", path.display());
+        // Output: Log file: logs\message-20260131-082908.log
+    }
+
+    flash_info_ct!("test"; "hello world");
+    flush!();
+
+    Ok(())
+}
+```
+
 ### Logging Structs
 
 FlashLog can easily log custom structs:
@@ -118,6 +145,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _logger = Logger::initialize()
         .with_file("logs", "message")?               // Log to a file called "message" in the "logs" directory
         .with_roll_period(RollingPeriod::Daily)?     // Log file is rolled in daily basis
+        //.with_roll_period(RollingPeriod::None)?    // Disable file rolling
         .with_max_roll_files(10)?                    // Ten old file will remain. if compress is true, there will remain 10 gz file (older log) as well 
         .with_compress(false)?                       // compress old log file
         .with_console_report(true)                   // Enable logging to the console

@@ -2,7 +2,23 @@ use crate::{get_unix_nano, UnixNano};
 use std::path::{Path, PathBuf};
 use std::fs::{File, OpenOptions, remove_file};
 use std::io::{self, BufWriter, Write};
+use std::sync::OnceLock;
 use chrono::Local;
+
+static INITIAL_LOG_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
+
+/// Returns the initial log file path if file logging is enabled.
+/// Returns `None` if file logging is not configured.
+pub fn get_initial_log_file_path() -> Option<PathBuf> {
+    INITIAL_LOG_FILE_PATH.get().cloned()
+}
+
+/// Generates and stores the initial log file path. Called by Logger::launch().
+pub(crate) fn set_initial_log_file_path(base_path: &Path, prefix: &str) -> PathBuf {
+    let file_path = RollingFileWriter::generate_file_path(base_path, prefix);
+    let _ = INITIAL_LOG_FILE_PATH.set(file_path.clone());
+    file_path
+}
 
 const SECOND_IN_NANOS: u64 = 1_000_000_000;
 const MINUATE_IN_NANOS: u64 = 60_000_000_000;
@@ -12,6 +28,7 @@ const WEEK_IN_NANOS: u64 = 604_800_000_000_000;
 
 #[derive(Clone, Debug)]
 pub enum RollingPeriod {
+    None,
     Secondly,
     Minutely,
     Hourly,
@@ -26,8 +43,10 @@ pub struct RollingConfig {
     //
     pub roll_period: Option<RollingPeriod>,
     pub max_roll_files: Option<usize>,
-    // 
+    //
     pub compress: bool,
+    /// Pre-generated file path (set by Logger::launch)
+    pub(crate) initial_file_path: Option<PathBuf>,
 }
 
 impl Default for RollingConfig {
@@ -38,6 +57,7 @@ impl Default for RollingConfig {
             roll_period: None,
             max_roll_files: None,
             compress: false,
+            initial_file_path: None,
         }
     }
 }
@@ -52,14 +72,18 @@ pub struct RollingFileWriter {
 
 impl RollingFileWriter {
     pub fn new(config: RollingConfig) -> io::Result<Self> {
+        let file_path = config.initial_file_path.clone()
+            .unwrap_or_else(|| Self::generate_file_path(&config.base_path, &config.file_name_prefix));
+        let _ = INITIAL_LOG_FILE_PATH.set(file_path.clone());
         let current_file = OpenOptions::new()
             .create(true)
             .append(true)
-            .open(Self::generate_file_path(&config.base_path, &config.file_name_prefix))?;
+            .open(&file_path)?;
 
         let last_roll_time = get_unix_nano();
         let max_roll_files = config.max_roll_files.unwrap_or(10);
         let rolling_nanos = match config.roll_period {
+            Some(RollingPeriod::None) => None,
             Some(RollingPeriod::Secondly) => Some(SECOND_IN_NANOS),
             Some(RollingPeriod::Minutely) => Some(MINUATE_IN_NANOS),
             Some(RollingPeriod::Hourly) => Some(HOUR_IN_NANOS),
@@ -76,7 +100,7 @@ impl RollingFileWriter {
         })
     }
 
-    fn generate_file_path(base_path: &Path, prefix: &str) -> PathBuf {
+    pub(crate) fn generate_file_path(base_path: &Path, prefix: &str) -> PathBuf {
         let now = Local::now();
         let timestamp = now.format("%Y%m%d-%H%M%S");
         let file_name = format!("{}-{}.log", prefix, timestamp);
@@ -224,7 +248,7 @@ impl RollingFileWriter {
                 remove_file(oldest_file)?;
             }
         }
-        
+
         Ok(())
     }
 }

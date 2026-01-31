@@ -1,6 +1,6 @@
 [package]
 name = "flashlog"
-version = "0.3.4"
+version = "0.3.5"
 edition = "2021"
 authors = ["Junbeom Lee <junbeoml22@gmail.com>"]
 description = "A fast logging library for Rust"
